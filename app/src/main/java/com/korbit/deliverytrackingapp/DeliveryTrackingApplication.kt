@@ -1,29 +1,26 @@
 package com.korbit.deliverytrackingapp
 
 import android.app.Application
-import androidx.hilt.work.HiltWorkerFactory
-import androidx.work.Configuration
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.korbit.deliverytrackingapp.core.logging.AppLogger
+import com.korbit.deliverytrackingapp.data.sync.SyncEngine
 import com.korbit.deliverytrackingapp.data.sync.SyncWorker
 import dagger.hilt.android.HiltAndroidApp
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 @HiltAndroidApp
-class DeliveryTrackingApplication : Application(), Configuration.Provider {
+class DeliveryTrackingApplication : Application() {
 
     @Inject
-    lateinit var workerFactory: HiltWorkerFactory
+    lateinit var syncEngine: SyncEngine
 
-    override val workManagerConfiguration: Configuration
-        get() = Configuration.Builder()
-            .setWorkerFactory(workerFactory)
-            .setMinimumLoggingLevel(android.util.Log.INFO)
-            .build()
+    @Inject
+    lateinit var appLogger: AppLogger
 
     override fun onCreate() {
         super.onCreate()

@@ -1,23 +1,24 @@
 package com.korbit.deliverytrackingapp.data.sync
 
 import android.content.Context
-import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.korbit.deliverytrackingapp.DeliveryTrackingApplication
 import com.korbit.deliverytrackingapp.core.logging.AppLogger
-import dagger.assisted.Assisted
-import dagger.assisted.AssistedInject
 
 /**
  * WorkManager worker: runs SyncEngine in background. No direct UI → network.
+ * Uses standard (Context, WorkerParameters) constructor so WorkManager can create it by reflection;
+ * dependencies are obtained from the Application.
  */
-@HiltWorker
-class SyncWorker @AssistedInject constructor(
-    @Assisted appContext: Context,
-    @Assisted params: WorkerParameters,
-    private val syncEngine: SyncEngine,
-    private val logger: AppLogger
+class SyncWorker(
+    appContext: Context,
+    params: WorkerParameters
 ) : CoroutineWorker(appContext, params) {
+
+    private val app = appContext.applicationContext as DeliveryTrackingApplication
+    private val syncEngine: SyncEngine get() = app.syncEngine
+    private val logger: AppLogger get() = app.appLogger
 
     private val tag = "SyncWorker"
 
