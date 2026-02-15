@@ -1,0 +1,35 @@
+package com.korbit.deliverytrackingapp.di
+
+import android.content.Context
+import androidx.room.Room
+import com.korbit.deliverytrackingapp.data.local.AppDatabase
+import com.korbit.deliverytrackingapp.data.local.dao.DeliveryDao
+import com.korbit.deliverytrackingapp.data.local.dao.DeliveryTaskDao
+import com.korbit.deliverytrackingapp.data.local.dao.OutboxDao
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
+
+@Module
+@InstallIn(SingletonComponent::class)
+object DatabaseModule {
+
+    @Provides
+    @Singleton
+    fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase =
+        Room.databaseBuilder(context, AppDatabase::class.java, "delivery_tracking_db")
+            .fallbackToDestructiveMigration()
+            .build()
+
+    @Provides
+    fun provideDeliveryDao(db: AppDatabase): DeliveryDao = db.deliveryDao()
+
+    @Provides
+    fun provideDeliveryTaskDao(db: AppDatabase): DeliveryTaskDao = db.deliveryTaskDao()
+
+    @Provides
+    fun provideOutboxDao(db: AppDatabase): OutboxDao = db.outboxDao()
+}

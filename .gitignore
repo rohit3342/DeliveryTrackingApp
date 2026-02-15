@@ -1,0 +1,55 @@
+# Built application files
+*.apk
+*.aar
+*.ap_
+*.aab
+
+# Files for the Android Debug Bridge (ADB)
+*.dex
+
+# Java class files
+*.class
+
+# Generated files
+bin/
+gen/
+out/
+release/
+
+# Gradle
+.gradle/
+build/
+
+# Local configuration
+local.properties
+
+# Android Studio
+*.iml
+.idea/
+.DS_Store
+
+# Keystore files (do not commit)
+*.jks
+*.keystore
+
+# External native build
+.externalNativeBuild/
+.cxx/
+
+# Proguard
+proguard/
+
+# Logs
+*.log
+
+# Android Profiling
+*.hprof
+
+# Kotlin
+*.kotlin_module
+
+# NDK
+obj/
+
+# Signing
+signing/
