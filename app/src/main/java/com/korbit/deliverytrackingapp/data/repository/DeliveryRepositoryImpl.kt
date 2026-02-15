@@ -59,6 +59,7 @@ class DeliveryRepositoryImpl @Inject constructor(
             customerAddress = e.customerAddress,
             customerPhone = e.customerPhone,
             warehouseName = e.warehouseName,
+            warehouseAddress = e.warehouseAddress,
             lastUpdatedAt = e.lastUpdatedAt,
             syncedAt = e.syncedAt,
             tasks = tasks.map(::toDomainTask)
@@ -87,6 +88,7 @@ class DeliveryRepositoryImpl @Inject constructor(
                 customerAddress = d.customerAddress,
                 customerPhone = d.customerPhone,
                 warehouseName = d.warehouseName,
+                warehouseAddress = d.warehouseAddress,
                 lastUpdatedAt = d.lastUpdatedAt,
                 syncedAt = d.syncedAt
             ),

@@ -1,6 +1,7 @@
 package com.korbit.deliverytrackingapp.presentation.tasks.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,6 +47,16 @@ private val StatusInTransitPurple = Color(0xFFAF52DE)
 private val StatusPickedUpBlue = Color(0xFF5B9BFE)
 private val StatusPendingGray = Color(0xFF8E8E93)
 
+/** Light fill, stroke, and text color for status pill (same as TaskDetailScreen). */
+private fun statusPillColors(status: String): Triple<Color, Color, Color> = when (status) {
+    "PENDING" -> Triple(Color(0xFFF0F0F0), StatusPendingGray, StatusPendingGray)
+    "PICKED_UP" -> Triple(Color(0xFFE8F0FE), StatusPickedUpBlue, StatusPickedUpBlue)
+    "REACHED" -> Triple(Color(0xFFF3E5F5), StatusInTransitPurple, StatusInTransitPurple)
+    "DELIVERED" -> Triple(Color(0xFFE8F5E9), StatusDeliveredGreen, StatusDeliveredGreen)
+    "FAILED" -> Triple(Color(0xFFFFEBEE), StatusFailedRed, StatusFailedRed)
+    else -> Triple(Color(0xFFF0F0F0), StatusPendingGray, StatusPendingGray)
+}
+
 private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss")
 
 private fun formatLastUpdate(epochMillis: Long): String {
@@ -65,14 +76,15 @@ fun HomeTaskCard(
     val task = taskWithDelivery.task
     val delivery = taskWithDelivery.delivery
     val displayId = "ORD-" + delivery.id.replace(Regex("[^A-Za-z0-9]"), "").uppercase().take(12).ifEmpty { task.id.takeLast(8).uppercase() }
-    val (statusLabel, statusColor) = when (task.status) {
-        "PENDING" -> "PENDING" to StatusPendingGray
-        "PICKED_UP" -> "PICKED UP" to StatusPickedUpBlue
-        "REACHED" -> "IN TRANSIT" to StatusInTransitPurple
-        "DELIVERED" -> "DELIVERED" to StatusDeliveredGreen
-        "FAILED" -> "FAILED" to StatusFailedRed
-        else -> task.status to StatusPendingGray
+    val statusLabel = when (task.status) {
+        "PENDING" -> "PENDING"
+        "PICKED_UP" -> "PICKED UP"
+        "REACHED" -> "IN TRANSIT"
+        "DELIVERED" -> "DELIVERED"
+        "FAILED" -> "FAILED"
+        else -> task.status
     }
+    val (pillFill, pillStroke, pillText) = statusPillColors(task.status)
     val lastUpdateMillis = maxOf(delivery.lastUpdatedAt, task.lastModifiedAt).takeIf { it > 0 } ?: delivery.lastUpdatedAt
     val lastUpdateText = formatLastUpdate(lastUpdateMillis)
 
@@ -124,14 +136,15 @@ fun HomeTaskCard(
                 ) {
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(statusColor)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(pillFill)
+                            .border(1.dp, pillStroke, RoundedCornerShape(20.dp))
                             .padding(horizontal = 8.dp, vertical = 2.dp)
                     ) {
                         Text(
                             text = statusLabel,
                             style = MaterialTheme.typography.labelSmall,
-                            color = Color.White
+                            color = pillText
                         )
                     }
                 }

@@ -34,6 +34,7 @@ class CreatePickupTaskUseCase @Inject constructor(
             customerAddress = customerAddress,
             customerPhone = customerPhone,
             warehouseName = warehouseName,
+            warehouseAddress = warehouseAddress,
             lastUpdatedAt = now,
             syncedAt = null,
             tasks = listOf(

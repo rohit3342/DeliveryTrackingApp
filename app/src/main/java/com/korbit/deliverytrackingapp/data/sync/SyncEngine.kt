@@ -50,6 +50,7 @@ class SyncEngine @Inject constructor(
             customerAddress = dto.customerAddress,
             customerPhone = dto.customerPhone.orEmpty(),
             warehouseName = dto.warehouseName.orEmpty(),
+            warehouseAddress = dto.warehouseAddress.orEmpty(),
             lastUpdatedAt = dto.lastUpdatedAt,
             syncedAt = dto.lastUpdatedAt,
             tasks = (dto.tasks ?: emptyList()).map { t ->

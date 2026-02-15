@@ -10,6 +10,7 @@ data class DeliveryDto(
     @SerializedName("customer_address") val customerAddress: String,
     @SerializedName("customer_phone") val customerPhone: String? = null,
     @SerializedName("warehouse_name") val warehouseName: String? = null,
+    @SerializedName("warehouse_address") val warehouseAddress: String? = null,
     @SerializedName("last_updated_at") val lastUpdatedAt: Long,
     @SerializedName("tasks") val tasks: List<TaskDto>?
 )

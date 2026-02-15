@@ -12,6 +12,7 @@ data class DeliveryEntity(
     val customerAddress: String,
     val customerPhone: String = "",
     val warehouseName: String = "",
+    val warehouseAddress: String = "",
     val lastUpdatedAt: Long,
     val syncedAt: Long?
 )

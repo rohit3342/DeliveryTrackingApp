@@ -8,6 +8,7 @@ import com.korbit.deliverytrackingapp.data.local.MIGRATION_3_4
 import com.korbit.deliverytrackingapp.data.local.MIGRATION_4_5
 import com.korbit.deliverytrackingapp.data.local.MIGRATION_5_6
 import com.korbit.deliverytrackingapp.data.local.MIGRATION_6_7
+import com.korbit.deliverytrackingapp.data.local.MIGRATION_7_8
 import com.korbit.deliverytrackingapp.data.local.dao.DeliveryDao
 import com.korbit.deliverytrackingapp.data.local.dao.DeliveryTaskDao
 import com.korbit.deliverytrackingapp.data.local.dao.TaskActionEventDao
@@ -27,7 +28,7 @@ object DatabaseModule {
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase =
         Room.databaseBuilder(context, AppDatabase::class.java, "delivery_tracking_db")
-            .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+            .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
             .fallbackToDestructiveMigration()
             .build()
 

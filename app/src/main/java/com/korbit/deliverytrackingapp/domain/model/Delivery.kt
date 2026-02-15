@@ -8,6 +8,7 @@ data class Delivery(
     val customerAddress: String,
     val customerPhone: String = "",
     val warehouseName: String = "",
+    val warehouseAddress: String = "",
     val lastUpdatedAt: Long,
     val syncedAt: Long?,
     val tasks: List<DeliveryTask> = emptyList()

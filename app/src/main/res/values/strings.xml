@@ -55,8 +55,12 @@
     <string name="create">Create</string>
     <string name="cancel">Cancel</string>
 
-    <!-- Task detail -->
+    <!-- Task detail / Order details -->
     <string name="task_details">Task Details</string>
+    <string name="order_details">Order Details</string>
+    <string name="order_progress">ORDER PROGRESS</string>
+    <string name="pickup_location">PICKUP LOCATION</string>
+    <string name="delivery_location">DELIVERY LOCATION</string>
     <string name="back_content_description">Back</string>
     <string name="tasks_section">Tasks</string>
     <string name="actions_section">Actions</string>
@@ -70,9 +74,12 @@
     <string name="tracking_timeline">Tracking</string>
     <string name="step_assigned">Assigned</string>
     <string name="step_picked">Picked from warehouse</string>
+    <string name="step_picked_up">Picked Up</string>
     <string name="step_reached">Reached destination</string>
+    <string name="step_reached_customer">Reached Customer</string>
     <string name="step_delivered">Delivered</string>
     <string name="step_failed">Delivery failed</string>
+    <string name="step_failed_to_deliver">Failed to Deliver</string>
     <string name="step_pickup_failed">Pickup failed</string>
     <string name="timeline_at">%1$s at %2$s</string>
     <string name="timeline_pending">Pending</string>
@@ -90,8 +97,15 @@
 
     <!-- Action button labels (user-friendly) -->
     <string name="action_mark_picked">Mark as picked from warehouse</string>
+    <string name="action_order_picked_up">Order Picked Up</string>
     <string name="action_mark_reached">I\'ve reached the location</string>
+    <string name="action_reached_customer">Reached Customer</string>
     <string name="action_mark_delivered">Mark as delivered</string>
+    <string name="action_delivered">Delivered</string>
     <string name="action_mark_failed">Mark as failed delivery</string>
+    <string name="action_failed">Failed</string>
+    <string name="action_return_to_warehouse">Return to Warehouse</string>
     <string name="action_mark_failed_pickup">Mark as failed pickup</string>
+    <string name="status_in_transit">IN TRANSIT</string>
+    <string name="failure_reason_hint">Reason for failure (optional)</string>
 </resources>

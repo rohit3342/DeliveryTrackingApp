@@ -44,6 +44,12 @@ internal val MIGRATION_6_7 = object : Migration(6, 7) {
     }
 }
 
+internal val MIGRATION_7_8 = object : Migration(7, 8) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE deliveries ADD COLUMN warehouseAddress TEXT NOT NULL DEFAULT ''")
+    }
+}
+
 @Database(
     entities = [
         DeliveryEntity::class,
@@ -51,7 +57,7 @@ internal val MIGRATION_6_7 = object : Migration(6, 7) {
         TaskEntity::class,
         TaskActionEventEntity::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
