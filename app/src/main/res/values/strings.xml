@@ -6,15 +6,25 @@
     <string name="assigned_tasks">Assigned Tasks</string>
     <string name="sync">Sync</string>
     <string name="sync_content_description">Sync</string>
+    <string name="pending_sync">pending sync</string>
+    <string name="last_update">Last update: %1$s</string>
     <string name="sync_done_content_description">Done</string>
     <string name="new_pickup_content_description">New pickup</string>
     <string name="error_generic">Error</string>
     <string name="no_tasks_assigned">No tasks assigned</string>
     <string name="no_tasks_for_filter">No tasks for this filter</string>
+    <string name="no_tasks_found">No tasks found</string>
+    <string name="create_first_task">Create your first task</string>
     <string name="create_pickup">Create pickup</string>
+    <string name="rider_delivery_app">Rider Delivery App</string>
+    <string name="offline_first_subtitle">Offline-first task management</string>
+    <string name="add_task">Add Task</string>
+    <string name="pickup_origin">Pickup</string>
 
     <!-- Filters -->
     <string name="filter_all">All</string>
+    <string name="filter_active">Active</string>
+    <string name="filter_done">Done</string>
     <string name="filter_pending">Pending</string>
     <string name="filter_reached">Reached</string>
     <string name="filter_picked">Picked</string>

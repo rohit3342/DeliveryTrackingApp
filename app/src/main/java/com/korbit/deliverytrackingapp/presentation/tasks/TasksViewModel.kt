@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.korbit.deliverytrackingapp.core.logging.AppLogger
 import com.korbit.deliverytrackingapp.domain.repository.OutboxRepository
-import com.korbit.deliverytrackingapp.domain.usecase.CreatePickupTaskUseCase
 import com.korbit.deliverytrackingapp.domain.usecase.EnsureSeedDataUseCase
 import com.korbit.deliverytrackingapp.domain.usecase.ObserveAllTasksUseCase
 import com.korbit.deliverytrackingapp.domain.usecase.TriggerSyncUseCase
@@ -22,7 +21,6 @@ import javax.inject.Inject
 class TasksViewModel @Inject constructor(
     private val observeAllTasksUseCase: ObserveAllTasksUseCase,
     private val ensureSeedDataUseCase: EnsureSeedDataUseCase,
-    private val createPickupTaskUseCase: CreatePickupTaskUseCase,
     private val triggerSyncUseCase: TriggerSyncUseCase,
     private val runFullSyncUseCase: RunFullSyncUseCase,
     private val outboxRepository: OutboxRepository,
@@ -47,12 +45,6 @@ class TasksViewModel @Inject constructor(
             }
             is TasksIntent.SetFilter -> _state.update { it.copy(selectedFilter = intent.filter) }
             is TasksIntent.OpenTask -> { /* navigation in UI */ }
-            is TasksIntent.ShowCreatePickup -> _state.update { it.copy(showCreatePickupDialog = true) }
-            is TasksIntent.DismissCreatePickup -> _state.update { it.copy(showCreatePickupDialog = false) }
-            is TasksIntent.CreatePickup -> createPickup(
-                intent.orderId, intent.warehouseName, intent.warehouseAddress,
-                intent.customerName, intent.customerAddress, intent.customerPhone
-            )
             is TasksIntent.ManualSync -> runManualSync()
             is TasksIntent.ClearSyncMessage -> _state.update { it.copy(syncMessage = null) }
         }
@@ -69,37 +61,24 @@ class TasksViewModel @Inject constructor(
                 }
                 .collect { list ->
                     val pending = outboxRepository.getPendingCount()
+                    val pendingIds = outboxRepository.getPendingEvents().map { it.taskId }.toSet()
                     _state.update {
-                        it.copy(tasks = list, isLoading = false, error = null, pendingSyncCount = pending)
+                        it.copy(
+                            tasks = list,
+                            isLoading = false,
+                            error = null,
+                            pendingSyncCount = pending,
+                            pendingSyncTaskIds = pendingIds
+                        )
                     }
                 }
         }
     }
 
-    private suspend fun refreshPendingSyncCount() {
-        _state.update { it.copy(pendingSyncCount = outboxRepository.getPendingCount()) }
-    }
-
-    private fun createPickup(
-        orderId: String,
-        warehouseName: String,
-        warehouseAddress: String,
-        customerName: String,
-        customerAddress: String,
-        customerPhone: String
-    ) {
-        viewModelScope.launch {
-            try {
-                createPickupTaskUseCase(orderId, warehouseName, warehouseAddress, customerName, customerAddress, customerPhone)
-                triggerSyncUseCase()
-                refreshPendingSyncCount()
-                _state.update { it.copy(showCreatePickupDialog = false) }
-                logger.d(tag, "Pickup created offline, sync triggered")
-            } catch (e: Exception) {
-                logger.e(tag, "Create pickup failed", e)
-                _state.update { it.copy(error = e.message) }
-            }
-        }
+    private suspend fun refreshPendingSyncState() {
+        val pending = outboxRepository.getPendingCount()
+        val pendingIds = outboxRepository.getPendingEvents().map { it.taskId }.toSet()
+        _state.update { it.copy(pendingSyncCount = pending, pendingSyncTaskIds = pendingIds) }
     }
 
     private fun runManualSync() {
@@ -108,7 +87,7 @@ class TasksViewModel @Inject constructor(
                 runFullSyncUseCase()
                 .fold(
                     onSuccess = { result ->
-                        refreshPendingSyncCount()
+                        refreshPendingSyncState()
                         _state.update {
                             it.copy(
                                 isSyncing = false,
@@ -118,7 +97,7 @@ class TasksViewModel @Inject constructor(
                     },
                     onFailure = { e ->
                         logger.e(tag, "Manual sync failed", e)
-                        refreshPendingSyncCount()
+                        refreshPendingSyncState()
                         _state.update {
                             it.copy(isSyncing = false, syncMessage = "Sync failed: ${e.message}")
                         }

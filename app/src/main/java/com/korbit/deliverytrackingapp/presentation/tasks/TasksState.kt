@@ -9,8 +9,9 @@ data class TasksState(
     val isSyncing: Boolean = false,
     val syncMessage: String? = null,
     val error: String? = null,
-    val showCreatePickupDialog: Boolean = false,
-    val pendingSyncCount: Int = 0
+    val pendingSyncCount: Int = 0,
+    /** Task IDs that have at least one PENDING outbox event (show "pending sync" pill on card). */
+    val pendingSyncTaskIds: Set<String> = emptySet()
 ) {
     val isAllSynced: Boolean get() = pendingSyncCount == 0
     val filteredTasks: List<TaskWithDelivery> =
