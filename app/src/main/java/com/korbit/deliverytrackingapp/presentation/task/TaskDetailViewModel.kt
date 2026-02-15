@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.korbit.deliverytrackingapp.core.logging.AppLogger
+import com.korbit.deliverytrackingapp.core.monitoring.Monitor
 import com.korbit.deliverytrackingapp.domain.model.DeliveryTask
 import com.korbit.deliverytrackingapp.domain.model.TaskActionType
 import com.korbit.deliverytrackingapp.domain.usecase.GetDeliveryWithTasksUseCase
@@ -24,10 +25,15 @@ class TaskDetailViewModel @Inject constructor(
     private val getDeliveryWithTasksUseCase: GetDeliveryWithTasksUseCase,
     private val updateTaskStatusUseCase: UpdateTaskStatusUseCase,
     private val triggerSyncUseCase: TriggerSyncUseCase,
-    private val logger: AppLogger
+    private val logger: AppLogger,
+    private val monitor: Monitor
 ) : ViewModel() {
 
     private val tag = "TaskDetailViewModel"
+
+    companion object {
+        private const val COMPONENT = "task_detail"
+    }
     private val deliveryId: String = checkNotNull(savedStateHandle["deliveryId"])
 
     private val _state = MutableStateFlow(TaskDetailState())
@@ -47,12 +53,15 @@ class TaskDetailViewModel @Inject constructor(
     private fun loadDelivery() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
+            monitor.recordEvent(COMPONENT, "load_started", mapOf("delivery_id" to deliveryId))
             getDeliveryWithTasksUseCase(deliveryId)
                 .catch { e ->
                     logger.e(tag, "Load delivery failed", e)
+                    monitor.recordEvent(COMPONENT, "load_failed", mapOf("delivery_id" to deliveryId, "error" to (e.message ?: e.javaClass.simpleName)))
                     _state.update { it.copy(isLoading = false, error = e.message) }
                 }
                 .collect { delivery ->
+                    monitor.recordEvent(COMPONENT, "load_success", mapOf("delivery_id" to deliveryId, "tasks_count" to delivery.tasks.size))
                     _state.update {
                         it.copy(delivery = delivery, isLoading = false, error = null)
                     }
@@ -77,9 +86,11 @@ class TaskDetailViewModel @Inject constructor(
                     actionTakenAt = actionTakenAt
                 )
                 triggerSyncUseCase()
+                monitor.recordEvent(COMPONENT, "action_performed", mapOf("task_id" to task.id, "action" to action.value))
                 logger.d(tag, "Task ${task.id} action=${action.value} (Room + Outbox, sync triggered)")
             } catch (e: Exception) {
                 logger.e(tag, "Perform action failed", e)
+                monitor.recordEvent(COMPONENT, "action_failed", mapOf("task_id" to task.id, "action" to action.value, "error" to (e.message ?: e.javaClass.simpleName)))
                 _state.update { it.copy(error = e.message) }
             }
         }

@@ -3,6 +3,7 @@ package com.korbit.deliverytrackingapp.data.sync
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import com.korbit.deliverytrackingapp.core.logging.AppLogger
+import com.korbit.deliverytrackingapp.core.monitoring.Monitor
 import com.korbit.deliverytrackingapp.data.local.dao.TaskActionEventDao
 import com.korbit.deliverytrackingapp.data.local.entity.TaskActionEventEntity
 import com.korbit.deliverytrackingapp.data.remote.api.DeliveryApi
@@ -29,10 +30,15 @@ class SyncOrchestrator @Inject constructor(
     private val deliveryRepository: DeliveryRepository,
     private val api: DeliveryApi,
     private val syncConfig: SyncConfig,
-    private val logger: AppLogger
+    private val logger: AppLogger,
+    private val monitor: Monitor
 ) {
     private val gson = Gson()
     private val tag = "SyncOrchestrator"
+
+    companion object {
+        private const val COMPONENT = "sync_orchestrator"
+    }
 
     companion object {
         private const val MAX_RETRY_ATTEMPTS = 5
@@ -48,10 +54,12 @@ class SyncOrchestrator @Inject constructor(
         val toSync = taskActionEventDao.getEventsToSync(limit = batchSize)
         if (toSync.isEmpty()) {
             logStructured("batch_empty", "size" to 0)
+            monitor.recordEvent(COMPONENT, "batch_empty", mapOf("size" to 0))
             return@runCatching SyncOrchestratorResult(synced = 0, failed = 0, skipped = 0)
         }
 
         logStructured("batch_start", "size" to toSync.size, "max" to batchSize)
+        monitor.recordEvent(COMPONENT, "batch_start", mapOf("size" to toSync.size, "max" to batchSize))
         var attempt = 0
         var lastException: Throwable? = null
 
@@ -64,6 +72,7 @@ class SyncOrchestrator @Inject constructor(
                     "failed" to result.failed,
                     "attempt" to (attempt + 1)
                 )
+                monitor.recordEvent(COMPONENT, "batch_complete", mapOf("synced" to result.synced, "failed" to result.failed, "attempt" to (attempt + 1)))
                 return@runCatching result
             } catch (e: IOException) {
                 lastException = e
@@ -74,6 +83,7 @@ class SyncOrchestrator @Inject constructor(
                     "maxAttempts" to MAX_RETRY_ATTEMPTS,
                     "error" to (e.message ?: "IOException")
                 )
+                monitor.recordEvent(COMPONENT, "batch_transient_error", mapOf("attempt" to attempt, "max_attempts" to MAX_RETRY_ATTEMPTS, "error" to (e.message ?: "IOException")))
                 if (attempt < MAX_RETRY_ATTEMPTS) {
                     val backoffMs = (BASE_BACKOFF_MS * 2.0.pow(attempt - 1)).toLong()
                     logStructured("backoff_wait", "delayMs" to backoffMs)
@@ -83,9 +93,11 @@ class SyncOrchestrator @Inject constructor(
         }
 
         logStructured("batch_exhausted", "attempts" to MAX_RETRY_ATTEMPTS)
+        monitor.recordEvent(COMPONENT, "batch_exhausted", mapOf("attempts" to MAX_RETRY_ATTEMPTS))
         throw lastException ?: IOException("Sync failed after $MAX_RETRY_ATTEMPTS attempts")
     }.onFailure { e ->
         logStructured("batch_failed", "error" to (e.message ?: e.javaClass.simpleName))
+        monitor.recordEvent(COMPONENT, "batch_failed", mapOf("error" to (e.message ?: e.javaClass.simpleName)))
         logger.e(tag, structuredMessage("batch_failed", "error" to (e.message ?: "")), e)
     }
 

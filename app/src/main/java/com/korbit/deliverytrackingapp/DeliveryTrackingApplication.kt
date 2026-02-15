@@ -7,6 +7,7 @@ import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.korbit.deliverytrackingapp.core.logging.AppLogger
+import com.korbit.deliverytrackingapp.core.monitoring.Monitor
 import com.korbit.deliverytrackingapp.data.sync.SyncEngine
 import com.korbit.deliverytrackingapp.data.sync.SyncWorker
 import dagger.hilt.android.HiltAndroidApp
@@ -21,6 +22,9 @@ class DeliveryTrackingApplication : Application() {
 
     @Inject
     lateinit var appLogger: AppLogger
+
+    @Inject
+    lateinit var monitor: Monitor
 
     override fun onCreate() {
         super.onCreate()

@@ -6,6 +6,8 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.korbit.deliverytrackingapp.core.logging.AppLogger
 import com.korbit.deliverytrackingapp.core.logging.AppLoggerImpl
+import com.korbit.deliverytrackingapp.core.monitoring.Monitor
+import com.korbit.deliverytrackingapp.core.monitoring.MonitorImpl
 import com.korbit.deliverytrackingapp.data.sync.SyncWorker
 import dagger.Module
 import dagger.Provides
@@ -20,6 +22,9 @@ object AppModule {
 
     @Provides
     fun provideAppLogger(): AppLogger = AppLoggerImpl()
+
+    @Provides
+    fun provideMonitor(): Monitor = MonitorImpl()
 
     @Provides
     fun provideWorkManager(@ApplicationContext context: Context): WorkManager =

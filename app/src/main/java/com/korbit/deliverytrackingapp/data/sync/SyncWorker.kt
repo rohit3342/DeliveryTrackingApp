@@ -6,6 +6,7 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.korbit.deliverytrackingapp.DeliveryTrackingApplication
 import com.korbit.deliverytrackingapp.core.logging.AppLogger
+import com.korbit.deliverytrackingapp.core.monitoring.Monitor
 
 /** Key for InputData: when true, run full sync (outbox + GET /deliveries); when false, outbox only. */
 const val SYNC_INPUT_FULL_SYNC = "full_sync"
@@ -24,20 +25,28 @@ class SyncWorker(
     private val app = appContext.applicationContext as DeliveryTrackingApplication
     private val syncEngine: SyncEngine get() = app.syncEngine
     private val logger: AppLogger get() = app.appLogger
+    private val monitor: Monitor get() = app.monitor
 
     private val tag = "SyncWorker"
+
+    companion object {
+        private const val COMPONENT = "sync_worker"
+    }
 
     override suspend fun doWork(): Result {
         val fullSync = inputData.getBoolean(SYNC_INPUT_FULL_SYNC, true)
         logger.i(tag, "SyncWorker doWork started (fullSync=$fullSync)")
+        monitor.recordEvent(COMPONENT, "work_started", mapOf("full_sync" to fullSync))
         return syncEngine.sync(fetchDeliveries = fullSync)
             .fold(
                 onSuccess = {
                     logger.i(tag, "Sync completed: $it")
+                    monitor.recordEvent(COMPONENT, "work_completed", mapOf("outbox_synced" to it.outboxSynced, "deliveries_synced" to it.deliveriesSynced))
                     Result.success()
                 },
                 onFailure = {
                     logger.e(tag, "Sync failed", it)
+                    monitor.recordEvent(COMPONENT, "work_failed", mapOf("error" to (it.message ?: it.javaClass.simpleName)))
                     Result.retry()
                 }
             )
