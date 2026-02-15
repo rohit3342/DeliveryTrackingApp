@@ -26,7 +26,6 @@ class CreateTaskViewModel @Inject constructor(
     val state: StateFlow<CreateTaskState> = _state.asStateFlow()
 
     fun create(
-        orderId: String,
         warehouseName: String,
         warehouseAddress: String,
         customerName: String,
@@ -37,7 +36,6 @@ class CreateTaskViewModel @Inject constructor(
             _state.update { it.copy(isLoading = true, error = null) }
             try {
                 createPickupTaskUseCase(
-                    orderId,
                     warehouseName,
                     warehouseAddress,
                     customerName,

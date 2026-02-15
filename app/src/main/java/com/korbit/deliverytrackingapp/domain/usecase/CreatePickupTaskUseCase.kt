@@ -16,7 +16,6 @@ class CreatePickupTaskUseCase @Inject constructor(
     private val outboxRepository: OutboxRepository
 ) {
     suspend operator fun invoke(
-        orderId: String,
         warehouseName: String,
         warehouseAddress: String,
         customerName: String,
@@ -26,6 +25,7 @@ class CreatePickupTaskUseCase @Inject constructor(
         val now = System.currentTimeMillis()
         val deliveryId = "d_${UUID.randomUUID().toString().take(8)}"
         val taskId = "t_${UUID.randomUUID().toString().take(8)}"
+        val orderId = "ORD-${deliveryId.replace("d_", "").uppercase()}"
         val delivery = Delivery(
             id = deliveryId,
             riderId = "rider_1",

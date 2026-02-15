@@ -68,7 +68,6 @@ fun CreateNewDeliveryTaskScreen(
         }
     }
 
-    var orderId by remember { mutableStateOf("") }
     var warehouseName by remember { mutableStateOf("") }
     var warehouseAddress by remember { mutableStateOf("") }
     var customerName by remember { mutableStateOf("") }
@@ -130,7 +129,6 @@ fun CreateNewDeliveryTaskScreen(
                     onClick = {
                         if (customerName.isNotBlank() && customerAddress.isNotBlank() && customerPhone.isNotBlank()) {
                             viewModel.create(
-                                orderId.trim(),
                                 warehouseName.trim(),
                                 warehouseAddress.trim(),
                                 customerName.trim(),
@@ -164,26 +162,6 @@ fun CreateNewDeliveryTaskScreen(
                 .padding(horizontal = 20.dp)
         ) {
             Spacer(modifier = Modifier.height(20.dp))
-            Text(
-                text = stringResource(R.string.order_id),
-                style = MaterialTheme.typography.labelLarge,
-                color = Color.Black
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            OutlinedTextField(
-                value = orderId,
-                onValueChange = { orderId = it },
-                placeholder = { Text(stringResource(R.string.order_id_hint)) },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(10.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedContainerColor = InputBgGray,
-                    focusedContainerColor = InputBgGray,
-                    unfocusedBorderColor = InputBorderGray,
-                    focusedBorderColor = PrimaryBlue
-                )
-            )
-            Spacer(modifier = Modifier.height(24.dp))
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = PickupSectionBg),
