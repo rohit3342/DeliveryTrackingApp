@@ -17,6 +17,7 @@
 11. [Database Schema](#database-schema)
 12. [Observability & Monitoring](#observability--monitoring)
 13. [AI-Assisted Development](#ai-assisted-development)
+14. [Screenshots](#screenshots)
 
 ---
 
@@ -343,6 +344,16 @@ I used AI to produce concrete code and documentation from my design. I treated i
 - The sync engine (SyncWorker → SyncEngine → SyncOrchestrator) is the only place that performs network calls.
 - Logging goes through **AppLogger**; observability goes through **Monitor** (events/metrics/breadcrumbs).
 - Use stable **component** and **event** names in Monitor for filtering and future backends.
+
+---
+
+## Screenshots
+
+| | | |
+|:---:|:---:|:---:|
+| ![Tasks list – All](docs/screenshots/tasks-list-all.png) | ![Create new task](docs/screenshots/create-new-task.png)| ![Tasks list – Done](docs/screenshots/tasks-list-done.png) |
+|  ![Tasks list – Active](docs/screenshots/tasks-list-active.png) | ![Order details – In transit](docs/screenshots/order-details-in-transit.png) | ![Order details – Picked up](docs/screenshots/order-details-picked-up.png) |
+| ![Order details – Failed to deliver](docs/screenshots/order-details-failed-to-deliver.png) | ![Order details – Delivered](docs/screenshots/order-details-delivered.png) | ![Order details – Delivered](docs/screenshots/order-details-reached-customer-button.png) |
 
 ---
 
