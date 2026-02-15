@@ -15,6 +15,9 @@ interface OutboxRepository {
 
     suspend fun getPendingCount(): Int
 
+    /** Bounded list of task IDs with unsynced events (for "pending" pill on cards). */
+    suspend fun getPendingTaskIdsLimit(limit: Int): Set<String>
+
     fun observeUnsyncedTaskIds(): Flow<List<String>>
 
     suspend fun markSynced(id: Long, syncedAt: Long)

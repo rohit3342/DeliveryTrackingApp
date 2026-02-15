@@ -50,6 +50,13 @@ internal val MIGRATION_7_8 = object : Migration(7, 8) {
     }
 }
 
+internal val MIGRATION_8_9 = object : Migration(8, 9) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_deliveries_lastUpdatedAt ON deliveries(lastUpdatedAt)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_task_action_events_syncStatus_createdAt ON task_action_events(syncStatus, createdAt)")
+    }
+}
+
 @Database(
     entities = [
         DeliveryEntity::class,
@@ -57,7 +64,7 @@ internal val MIGRATION_7_8 = object : Migration(7, 8) {
         TaskEntity::class,
         TaskActionEventEntity::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

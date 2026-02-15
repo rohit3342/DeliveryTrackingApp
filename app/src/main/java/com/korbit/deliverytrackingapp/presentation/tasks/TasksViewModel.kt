@@ -2,26 +2,34 @@ package com.korbit.deliverytrackingapp.presentation.tasks
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.PagingData
 import com.korbit.deliverytrackingapp.core.logging.AppLogger
 import com.korbit.deliverytrackingapp.core.monitoring.Monitor
+import com.korbit.deliverytrackingapp.domain.model.TaskWithDelivery
 import com.korbit.deliverytrackingapp.domain.repository.OutboxRepository
 import com.korbit.deliverytrackingapp.domain.usecase.EnsureSeedDataUseCase
-import com.korbit.deliverytrackingapp.domain.usecase.ObserveAllTasksUseCase
+import com.korbit.deliverytrackingapp.domain.usecase.GetTaskCountUseCase
+import com.korbit.deliverytrackingapp.domain.usecase.ObserveTasksPagedUseCase
 import com.korbit.deliverytrackingapp.domain.usecase.TriggerSyncUseCase
 import com.korbit.deliverytrackingapp.domain.usecase.RunFullSyncUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+private const val PAGE_SIZE = 30
+
 @HiltViewModel
 class TasksViewModel @Inject constructor(
-    private val observeAllTasksUseCase: ObserveAllTasksUseCase,
+    private val observeTasksPagedUseCase: ObserveTasksPagedUseCase,
+    private val getTaskCountUseCase: GetTaskCountUseCase,
     private val ensureSeedDataUseCase: EnsureSeedDataUseCase,
     private val triggerSyncUseCase: TriggerSyncUseCase,
     private val runFullSyncUseCase: RunFullSyncUseCase,
@@ -39,11 +47,17 @@ class TasksViewModel @Inject constructor(
     private val _state = MutableStateFlow(TasksState())
     val state: StateFlow<TasksState> = _state.asStateFlow()
 
+    /** Paged task list; recomputes when selectedFilter changes. */
+    val pagedTasksFlow: kotlinx.coroutines.flow.Flow<PagingData<TaskWithDelivery>> =
+        _state.map { it.selectedFilter }.distinctUntilChanged().flatMapLatest { filter ->
+            observeTasksPagedUseCase(PAGE_SIZE, filter.name)
+        }
+
     init {
         handle(TasksIntent.Load)
 
         viewModelScope.launch {
-            outboxRepository.observeUnsyncedTaskIds().collectLatest { ids ->
+            outboxRepository.observeUnsyncedTaskIds().collectLatest {
                 refreshPendingSyncState()
             }
         }
@@ -71,32 +85,32 @@ class TasksViewModel @Inject constructor(
             ensureSeedDataUseCase()
             _state.update { it.copy(isLoading = true, error = null) }
             monitor.recordEvent(COMPONENT, "load_started", emptyMap())
-            observeAllTasksUseCase()
-                .catch { e ->
-                    logger.e(tag, "Load tasks failed", e)
-                    monitor.recordEvent(COMPONENT, "load_failed", mapOf("error" to (e.message ?: e.javaClass.simpleName)))
-                    _state.update { it.copy(isLoading = false, error = e.message) }
+            try {
+                val totalCount = getTaskCountUseCase(TaskFilter.ALL.name)
+                val activeCount = getTaskCountUseCase(TaskFilter.ACTIVE.name)
+                val doneCount = getTaskCountUseCase(TaskFilter.DONE.name)
+                refreshPendingSyncState()
+                monitor.recordEvent(COMPONENT, "load_success", mapOf("total_count" to totalCount))
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        error = null,
+                        totalCount = totalCount,
+                        activeCount = activeCount,
+                        doneCount = doneCount
+                    )
                 }
-                .collect { list ->
-                    val pending = outboxRepository.getPendingCount()
-                    val pendingIds = outboxRepository.getPendingEvents().map { it.taskId }.toSet()
-                    monitor.recordEvent(COMPONENT, "load_success", mapOf("tasks_count" to list.size, "pending_sync" to pending))
-                    _state.update {
-                        it.copy(
-                            tasks = list,
-                            isLoading = false,
-                            error = null,
-                            pendingSyncCount = pending,
-                            pendingSyncTaskIds = pendingIds
-                        )
-                    }
-                }
+            } catch (e: Exception) {
+                logger.e(tag, "Load tasks failed", e)
+                monitor.recordEvent(COMPONENT, "load_failed", mapOf("error" to (e.message ?: e.javaClass.simpleName)))
+                _state.update { it.copy(isLoading = false, error = e.message) }
+            }
         }
     }
 
     private suspend fun refreshPendingSyncState() {
         val pending = outboxRepository.getPendingCount()
-        val pendingIds = outboxRepository.getPendingEvents().map { it.taskId }.toSet()
+        val pendingIds = outboxRepository.getPendingTaskIdsLimit(500)
         _state.update { it.copy(pendingSyncCount = pending, pendingSyncTaskIds = pendingIds) }
     }
 

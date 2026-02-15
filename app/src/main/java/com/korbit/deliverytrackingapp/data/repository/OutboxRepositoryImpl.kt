@@ -29,6 +29,9 @@ class OutboxRepositoryImpl @Inject constructor(
     override suspend fun getPendingCount(): Int =
         taskActionEventDao.getUnsyncedCount()
 
+    override suspend fun getPendingTaskIdsLimit(limit: Int): Set<String> =
+        taskActionEventDao.getUnsyncedTaskIdsLimit(limit).toSet()
+
     override fun observeUnsyncedTaskIds(): Flow<List<String>> =
         taskActionEventDao.observeUnsyncedTaskIds()
 

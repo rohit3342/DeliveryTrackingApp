@@ -17,6 +17,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemKey
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Sync
@@ -64,6 +68,8 @@ fun TasksScreen(
     viewModel: TasksViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    val pagedTasks: LazyPagingItems<com.korbit.deliverytrackingapp.domain.model.TaskWithDelivery> =
+        viewModel.pagedTasksFlow.collectAsLazyPagingItems()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(state.syncMessage) {
@@ -139,10 +145,7 @@ fun TasksScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 val homeFilters = listOf(TaskFilter.ALL, TaskFilter.ACTIVE, TaskFilter.DONE)
-                val allCount = state.tasks.size
-                val activeCount = state.tasks.count { TaskFilter.ACTIVE.matches(it) }
-                val doneCount = state.tasks.count { TaskFilter.DONE.matches(it) }
-                val counts = listOf(allCount, activeCount, doneCount)
+                val counts = listOf(state.totalCount, state.activeCount, state.doneCount)
                 homeFilters.forEachIndexed { index, filter ->
                     val count = counts[index]
                     val isSelected = state.selectedFilter == filter
@@ -190,7 +193,7 @@ fun TasksScreen(
             }
             Box(modifier = Modifier.fillMaxSize()) {
                 when {
-                    state.isLoading && state.tasks.isEmpty() -> {
+                    state.isLoading && state.totalCount == 0 && state.activeCount == 0 && state.doneCount == 0 -> {
                         CircularProgressIndicator(
                             modifier = Modifier.align(Alignment.Center),
                             color = HeaderBlue
@@ -205,7 +208,23 @@ fun TasksScreen(
                             color = EmptyTextGray
                         )
                     }
-                    state.filteredTasks.isEmpty() -> {
+                    pagedTasks.loadState.refresh is LoadState.Loading && pagedTasks.itemCount == 0 -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier.align(Alignment.Center),
+                            color = HeaderBlue
+                        )
+                    }
+                    pagedTasks.loadState.refresh is LoadState.Error && pagedTasks.itemCount == 0 -> {
+                        Text(
+                            text = (pagedTasks.loadState.refresh as LoadState.Error).error.message
+                                ?: stringResource(R.string.error_generic),
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .padding(16.dp),
+                            color = EmptyTextGray
+                        )
+                    }
+                    pagedTasks.itemCount == 0 -> {
                         Card(
                             modifier = Modifier
                                 .align(Alignment.Center)
@@ -243,14 +262,32 @@ fun TasksScreen(
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             items(
-                                state.filteredTasks,
-                                key = { "${it.delivery.id}_${it.task.id}" }
-                            ) { twd ->
-                                HomeTaskCard(
-                                    taskWithDelivery = twd,
-                                    pendingSync = state.pendingSyncTaskIds.contains(twd.task.id),
-                                    onClick = { onTaskClick(twd.delivery.id, twd.task.id) }
-                                )
+                                count = pagedTasks.itemCount,
+                                key = pagedTasks.itemKey { it -> "${it.delivery.id}_${it.task.id}" }
+                            ) { index ->
+                                pagedTasks[index]?.let { twd ->
+                                    HomeTaskCard(
+                                        taskWithDelivery = twd,
+                                        pendingSync = state.pendingSyncTaskIds.contains(twd.task.id),
+                                        onClick = { onTaskClick(twd.delivery.id, twd.task.id) }
+                                    )
+                                }
+                            }
+                            when (val append = pagedTasks.loadState.append) {
+                                is LoadState.Loading -> {
+                                    item {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            CircularProgressIndicator(color = HeaderBlue)
+                                        }
+                                    }
+                                }
+                                is LoadState.Error -> { /* optional: show retry */ }
+                                else -> {}
                             }
                         }
                     }

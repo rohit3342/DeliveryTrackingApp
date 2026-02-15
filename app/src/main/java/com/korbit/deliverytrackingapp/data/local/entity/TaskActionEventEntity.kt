@@ -12,7 +12,8 @@ import androidx.room.PrimaryKey
     tableName = "task_action_events",
     indices = [
         Index("taskId"),
-        Index("syncStatus")
+        Index("syncStatus"),
+        Index(value = ["syncStatus", "createdAt"])
     ]
 )
 data class TaskActionEventEntity(

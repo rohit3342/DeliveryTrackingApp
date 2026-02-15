@@ -1,7 +1,9 @@
 package com.korbit.deliverytrackingapp.domain.repository
 
+import androidx.paging.PagingData
 import com.korbit.deliverytrackingapp.domain.model.Delivery
 import com.korbit.deliverytrackingapp.domain.model.DeliveryTask
+import com.korbit.deliverytrackingapp.domain.model.TaskWithDelivery
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -11,6 +13,9 @@ import kotlinx.coroutines.flow.Flow
 interface DeliveryRepository {
 
     fun observeAllDeliveries(): Flow<List<Delivery>>
+
+    /** Paged task list for scale. statusFilter: ALL, ACTIVE, or DONE. */
+    fun observeTasksPaged(pageSize: Int, statusFilter: String): Flow<PagingData<TaskWithDelivery>>
 
     fun observeDeliveryWithTasks(deliveryId: String): Flow<Delivery?>
 
@@ -27,4 +32,7 @@ interface DeliveryRepository {
     suspend fun getDeliveryById(deliveryId: String): Delivery?
 
     suspend fun getDeliveryCount(): Int
+
+    /** Task count by filter (ALL, ACTIVE, DONE) for list header. */
+    suspend fun getTaskCount(statusFilter: String): Int
 }

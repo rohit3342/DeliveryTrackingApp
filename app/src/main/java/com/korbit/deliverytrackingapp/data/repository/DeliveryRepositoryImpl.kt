@@ -1,11 +1,17 @@
 package com.korbit.deliverytrackingapp.data.repository
 
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.map
 import com.korbit.deliverytrackingapp.data.local.dao.DeliveryDao
 import com.korbit.deliverytrackingapp.data.local.dao.DeliveryTaskDao
+import com.korbit.deliverytrackingapp.data.local.dao.DeliveryDao.TaskWithDeliveryRow
 import com.korbit.deliverytrackingapp.data.local.entity.DeliveryEntity
 import com.korbit.deliverytrackingapp.data.local.entity.DeliveryTaskEntity
+import com.korbit.deliverytrackingapp.data.sync.SyncConfig
 import com.korbit.deliverytrackingapp.domain.model.Delivery
 import com.korbit.deliverytrackingapp.domain.model.DeliveryTask
+import com.korbit.deliverytrackingapp.domain.model.TaskWithDelivery
 import com.korbit.deliverytrackingapp.domain.repository.DeliveryRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -13,13 +19,28 @@ import javax.inject.Inject
 
 class DeliveryRepositoryImpl @Inject constructor(
     private val deliveryDao: DeliveryDao,
-    private val deliveryTaskDao: DeliveryTaskDao
+    private val deliveryTaskDao: DeliveryTaskDao,
+    private val syncConfig: SyncConfig
 ) : DeliveryRepository {
 
     override fun observeAllDeliveries(): Flow<List<Delivery>> =
         deliveryDao.observeAllDeliveriesWithTasks().map { list ->
             list.map { d -> toDomain(d.delivery, d.tasks) }
         }
+
+    override fun observeTasksPaged(pageSize: Int, statusFilter: String): Flow<PagingData<TaskWithDelivery>> =
+        androidx.paging.Pager(
+            config = PagingConfig(pageSize = pageSize, enablePlaceholders = false),
+            pagingSourceFactory = { deliveryDao.getTaskWithDeliveryPagingSource(statusFilter) }
+        ).flow.map { pagingData ->
+            pagingData.map { row -> toTaskWithDelivery(row) }
+        }
+
+    private fun toTaskWithDelivery(row: TaskWithDeliveryRow): TaskWithDelivery =
+        TaskWithDelivery(
+            task = toDomainTask(row.task),
+            delivery = toDomain(row.delivery, listOf(row.task))
+        )
 
     override fun observeDeliveryWithTasks(deliveryId: String): Flow<Delivery?> =
         deliveryDao.observeDeliveryWithTasks(deliveryId).map { it?.let { d -> toDomain(d.delivery, d.tasks) } }
@@ -34,10 +55,13 @@ class DeliveryRepositoryImpl @Inject constructor(
     }
 
     override suspend fun insertDeliveriesFromSync(deliveries: List<Delivery>) {
-        val entities = deliveries.map { fromDomain(it).first }
-        val allTasks = deliveries.flatMap { d -> d.tasks.map { fromDomainTask(it, d.id) } }
-        deliveryDao.insertAll(entities)
-        if (allTasks.isNotEmpty()) deliveryDao.insertTasks(allTasks)
+        val chunkSize = syncConfig.syncInsertChunkSize
+        deliveries.chunked(chunkSize).forEach { chunk ->
+            val entities = chunk.map { fromDomain(it).first }
+            val tasks = chunk.flatMap { d -> d.tasks.map { fromDomainTask(it, d.id) } }
+            deliveryDao.insertAll(entities)
+            if (tasks.isNotEmpty()) deliveryDao.insertTasks(tasks)
+        }
     }
 
     override suspend fun updateDeliverySyncedAt(deliveryId: String, syncedAt: Long) {
@@ -54,6 +78,8 @@ class DeliveryRepositoryImpl @Inject constructor(
         deliveryDao.getDeliveryWithTasksOnce(deliveryId)?.let { toDomain(it.delivery, it.tasks) }
 
     override suspend fun getDeliveryCount(): Int = deliveryDao.getDeliveryCount()
+
+    override suspend fun getTaskCount(statusFilter: String): Int = deliveryDao.getTaskCount(statusFilter)
 
     private fun toDomain(e: DeliveryEntity, tasks: List<DeliveryTaskEntity> = emptyList()): Delivery =
         Delivery(

@@ -35,6 +35,10 @@ interface TaskActionEventDao {
     @Query("SELECT taskId FROM task_action_events WHERE syncStatus IN ('PENDING', 'FAILED')")
     fun observeUnsyncedTaskIds(): Flow<List<String>>
 
+    /** Bounded list of distinct task IDs with unsynced events, for UI pill. */
+    @Query("SELECT DISTINCT taskId FROM task_action_events WHERE syncStatus IN ('PENDING', 'FAILED') ORDER BY createdAt ASC LIMIT :limit")
+    suspend fun getUnsyncedTaskIdsLimit(limit: Int): List<String>
+
     @Query(
         "UPDATE task_action_events SET syncStatus = :syncedStatus, syncedAt = :syncedAt WHERE id = :eventId"
     )

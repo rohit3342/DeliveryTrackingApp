@@ -1,19 +1,17 @@
 package com.korbit.deliverytrackingapp.presentation.tasks
 
-import com.korbit.deliverytrackingapp.domain.model.TaskWithDelivery
-
 data class TasksState(
-    val tasks: List<TaskWithDelivery> = emptyList(),
     val selectedFilter: TaskFilter = TaskFilter.ALL,
+    val totalCount: Int = 0,
+    val activeCount: Int = 0,
+    val doneCount: Int = 0,
     val isLoading: Boolean = false,
     val isSyncing: Boolean = false,
     val syncMessage: String? = null,
     val error: String? = null,
     val pendingSyncCount: Int = 0,
-    /** Task IDs that have at least one PENDING outbox event (show "pending sync" pill on card). */
+    /** Task IDs that have pending sync (bounded set for "pending" pill on cards). */
     val pendingSyncTaskIds: Set<String> = emptySet()
 ) {
     val isAllSynced: Boolean get() = pendingSyncCount == 0
-    val filteredTasks: List<TaskWithDelivery> =
-        if (selectedFilter == TaskFilter.ALL) tasks else tasks.filter(selectedFilter.matches)
 }

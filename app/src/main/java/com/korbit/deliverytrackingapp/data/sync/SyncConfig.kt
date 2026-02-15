@@ -8,7 +8,11 @@ import javax.inject.Singleton
  */
 @Singleton
 class SyncConfig @Inject constructor() {
-    /** Max pending events to process per sync run. Default 10 when network comes online. */
-    var outboxBatchSize: Int = 10
-        set(value) { field = value.coerceAtLeast(1).coerceAtMost(100) }
+    /** Max pending events to process per sync run. Default 50 for faster drain. */
+    var outboxBatchSize: Int = 50
+        set(value) { field = value.coerceAtLeast(1).coerceAtMost(200) }
+
+    /** Max deliveries to insert per chunk when syncing from GET /deliveries. Avoids one huge transaction. */
+    var syncInsertChunkSize: Int = 300
+        set(value) { field = value.coerceAtLeast(1).coerceAtMost(2000) }
 }
