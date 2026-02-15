@@ -6,10 +6,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.korbit.deliverytrackingapp.presentation.delivery.DeliveryScreen
 import com.korbit.deliverytrackingapp.presentation.task.TaskDetailScreen
+import com.korbit.deliverytrackingapp.presentation.tasks.TasksScreen
 
-const val DELIVERY_LIST_ROUTE = "deliveries"
+const val TASKS_LIST_ROUTE = "tasks"
 const val TASK_DETAIL_ROUTE = "delivery/{deliveryId}"
 const val DELIVERY_ID_ARG = "deliveryId"
 
@@ -21,12 +21,12 @@ fun AppNavigation(
 ) {
     NavHost(
         navController = navController,
-        startDestination = DELIVERY_LIST_ROUTE
+        startDestination = TASKS_LIST_ROUTE
     ) {
-        composable(DELIVERY_LIST_ROUTE) {
-            DeliveryScreen(
-                onDeliveryClick = { id ->
-                    navController.navigate(taskDetailRoute(id))
+        composable(TASKS_LIST_ROUTE) {
+            TasksScreen(
+                onTaskClick = { deliveryId, _ ->
+                    navController.navigate(taskDetailRoute(deliveryId))
                 }
             )
         }

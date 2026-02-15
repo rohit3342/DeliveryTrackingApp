@@ -17,6 +17,10 @@ interface DeliveryDao {
     @Query("SELECT * FROM deliveries ORDER BY lastUpdatedAt DESC")
     fun observeAllDeliveries(): Flow<List<DeliveryEntity>>
 
+    @Transaction
+    @Query("SELECT * FROM deliveries ORDER BY lastUpdatedAt DESC")
+    fun observeAllDeliveriesWithTasks(): Flow<List<DeliveryWithTasks>>
+
     @Query("SELECT * FROM deliveries WHERE id = :deliveryId")
     fun observeDeliveryById(deliveryId: String): Flow<DeliveryEntity?>
 
@@ -38,6 +42,9 @@ interface DeliveryDao {
 
     @Query("UPDATE deliveries SET syncedAt = :syncedAt WHERE id = :deliveryId")
     suspend fun updateSyncedAt(deliveryId: String, syncedAt: Long)
+
+    @Query("SELECT COUNT(*) FROM deliveries")
+    suspend fun getDeliveryCount(): Int
 
     @Query("DELETE FROM deliveries")
     suspend fun deleteAll()

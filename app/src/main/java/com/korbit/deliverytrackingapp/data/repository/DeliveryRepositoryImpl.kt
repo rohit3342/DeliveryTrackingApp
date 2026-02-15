@@ -17,7 +17,9 @@ class DeliveryRepositoryImpl @Inject constructor(
 ) : DeliveryRepository {
 
     override fun observeAllDeliveries(): Flow<List<Delivery>> =
-        deliveryDao.observeAllDeliveries().map { it.map(::toDomain) }
+        deliveryDao.observeAllDeliveriesWithTasks().map { list ->
+            list.map { d -> toDomain(d.delivery, d.tasks) }
+        }
 
     override fun observeDeliveryWithTasks(deliveryId: String): Flow<Delivery?> =
         deliveryDao.observeDeliveryWithTasks(deliveryId).map { it?.let { d -> toDomain(d.delivery, d.tasks) } }
@@ -39,6 +41,14 @@ class DeliveryRepositoryImpl @Inject constructor(
         deliveryDao.updateSyncedAt(deliveryId, syncedAt)
     }
 
+    override suspend fun insertDeliveryWithTasks(delivery: Delivery) {
+        val (entity, taskEntities) = fromDomain(delivery)
+        deliveryDao.insert(entity)
+        if (taskEntities.isNotEmpty()) deliveryDao.insertTasks(taskEntities)
+    }
+
+    override suspend fun getDeliveryCount(): Int = deliveryDao.getDeliveryCount()
+
     private fun toDomain(e: DeliveryEntity, tasks: List<DeliveryTaskEntity> = emptyList()): Delivery =
         Delivery(
             id = e.id,
@@ -46,6 +56,7 @@ class DeliveryRepositoryImpl @Inject constructor(
             status = e.status,
             customerName = e.customerName,
             customerAddress = e.customerAddress,
+            customerPhone = e.customerPhone,
             lastUpdatedAt = e.lastUpdatedAt,
             syncedAt = e.syncedAt,
             tasks = tasks.map(::toDomainTask)
@@ -69,6 +80,7 @@ class DeliveryRepositoryImpl @Inject constructor(
                 status = d.status,
                 customerName = d.customerName,
                 customerAddress = d.customerAddress,
+                customerPhone = d.customerPhone,
                 lastUpdatedAt = d.lastUpdatedAt,
                 syncedAt = d.syncedAt
             ),

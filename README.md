@@ -26,7 +26,7 @@ See [FOLDER_STRUCTURE.md](FOLDER_STRUCTURE.md) for the full layout.
 
 - **core/logging**: Central `AppLogger` used by sync, repositories, and ViewModels.
 - **domain**: Models, repository interfaces, use cases.
-- **data**: Room entities/DAOs, Retrofit API/DTOs, repository implementations, **SyncEngine**, **OutboxProcessor**, **SyncWorker**.
+- **data**: Room entities/DAOs, Retrofit API/DTOs, repository implementations, **SyncEngine**, **SyncOrchestrator** (batch outbox sync, backoff, partial failure), **SyncWorker**.
 - **presentation**: MVI (State, Intent, ViewModel), Compose screens, navigation, theme.
 - **di**: Hilt modules (App, Database, Network, Sync).
 

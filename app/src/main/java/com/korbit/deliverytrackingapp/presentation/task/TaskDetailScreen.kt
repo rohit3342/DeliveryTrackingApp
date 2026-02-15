@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.korbit.deliverytrackingapp.domain.model.DeliveryTask
+import com.korbit.deliverytrackingapp.domain.model.TaskActionType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,7 +34,7 @@ fun TaskDetailScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Delivery Details") })
+            TopAppBar(title = { Text("Task Details") })
         }
     ) { padding ->
         Column(
@@ -54,7 +55,7 @@ fun TaskDetailScreen(
                     modifier = Modifier.padding(top = 4.dp)
                 )
                 Text(
-                    text = "Status: ${delivery.status}",
+                    text = "Delivery: ${delivery.status}",
                     style = MaterialTheme.typography.labelMedium,
                     modifier = Modifier.padding(top = 8.dp)
                 )
@@ -67,7 +68,7 @@ fun TaskDetailScreen(
                 delivery.tasks.forEach { task ->
                     TaskItem(
                         task = task,
-                        onComplete = { viewModel.handle(TaskDetailIntent.CompleteTask(task)) }
+                        onAction = { action -> viewModel.handle(TaskDetailIntent.PerformAction(task, action)) }
                     )
                 }
             } ?: run {
@@ -84,29 +85,44 @@ fun TaskDetailScreen(
 @Composable
 private fun TaskItem(
     task: DeliveryTask,
-    onComplete: () -> Unit,
+    onAction: (TaskActionType) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier.fillMaxWidth().padding(vertical = 4.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = task.type, style = MaterialTheme.typography.titleSmall)
-                Text(
-                    text = "Status: ${task.status}",
-                    style = MaterialTheme.typography.bodySmall
-                )
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = task.type, style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        text = "Status: ${task.status}",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
             }
-            if (task.status != "COMPLETED") {
-                Button(onClick = onComplete) {
-                    Text("Complete")
+            if (task.status == "PENDING" || task.status == "REACHED" || task.status == "PICKED_UP") {
+                Column(
+                    modifier = Modifier.padding(top = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf(
+                        TaskActionType.REACHED,
+                        TaskActionType.PICKED_UP,
+                        TaskActionType.DELIVERED,
+                        TaskActionType.FAILED
+                    ).forEach { action ->
+                        Button(
+                            onClick = { onAction(action) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(text = action.name.replace("_", " "))
+                        }
+                    }
                 }
             }
         }

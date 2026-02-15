@@ -5,7 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.korbit.deliverytrackingapp.core.logging.AppLogger
 import com.korbit.deliverytrackingapp.domain.model.DeliveryTask
+import com.korbit.deliverytrackingapp.domain.model.TaskActionType
 import com.korbit.deliverytrackingapp.domain.usecase.GetDeliveryWithTasksUseCase
+import com.korbit.deliverytrackingapp.domain.usecase.TriggerSyncUseCase
 import com.korbit.deliverytrackingapp.domain.usecase.UpdateTaskStatusUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +23,7 @@ class TaskDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val getDeliveryWithTasksUseCase: GetDeliveryWithTasksUseCase,
     private val updateTaskStatusUseCase: UpdateTaskStatusUseCase,
+    private val triggerSyncUseCase: TriggerSyncUseCase,
     private val logger: AppLogger
 ) : ViewModel() {
 
@@ -37,7 +40,7 @@ class TaskDetailViewModel @Inject constructor(
     fun handle(intent: TaskDetailIntent) {
         when (intent) {
             is TaskDetailIntent.Load -> loadDelivery()
-            is TaskDetailIntent.CompleteTask -> completeTask(intent.task)
+            is TaskDetailIntent.PerformAction -> performAction(intent.task, intent.action)
         }
     }
 
@@ -57,19 +60,24 @@ class TaskDetailViewModel @Inject constructor(
         }
     }
 
-    private fun completeTask(task: DeliveryTask) {
+    private fun performAction(task: DeliveryTask, action: TaskActionType) {
         viewModelScope.launch {
             try {
+                val completedAt = when (action) {
+                    TaskActionType.REACHED, TaskActionType.PICKED_UP,
+                    TaskActionType.DELIVERED, TaskActionType.FAILED -> System.currentTimeMillis()
+                }
                 updateTaskStatusUseCase(
                     taskId = task.id,
-                    status = "COMPLETED",
-                    completedAt = System.currentTimeMillis(),
-                    action = "COMPLETE",
+                    status = action.value,
+                    completedAt = completedAt,
+                    action = action.value,
                     payload = null
                 )
-                logger.d(tag, "Task ${task.id} marked completed (written to Room + Outbox)")
+                triggerSyncUseCase()
+                logger.d(tag, "Task ${task.id} action=${action.value} (Room + Outbox, sync triggered)")
             } catch (e: Exception) {
-                logger.e(tag, "Complete task failed", e)
+                logger.e(tag, "Perform action failed", e)
                 _state.update { it.copy(error = e.message) }
             }
         }

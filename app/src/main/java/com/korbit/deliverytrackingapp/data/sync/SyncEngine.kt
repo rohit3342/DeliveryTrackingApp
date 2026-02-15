@@ -9,12 +9,12 @@ import com.korbit.deliverytrackingapp.domain.repository.DeliveryRepository
 import javax.inject.Inject
 
 /**
- * Sync engine: (1) Push PENDING outbox events to API, (2) Pull deliveries from API into Room.
+ * Sync engine: (1) Push PENDING outbox events via SyncOrchestrator, (2) Pull deliveries from API into Room.
  * All network access is centralized here – no UI → network.
  */
 class SyncEngine @Inject constructor(
     private val deliveryRepository: DeliveryRepository,
-    private val outboxProcessor: OutboxProcessor,
+    private val syncOrchestrator: SyncOrchestrator,
     private val api: DeliveryApi,
     private val logger: AppLogger
 ) {
@@ -22,9 +22,9 @@ class SyncEngine @Inject constructor(
 
     suspend fun sync(): Result<SyncResult> = runCatching {
         logger.i(tag, "Sync started")
-        // 1. Process outbox first (push local actions)
-        val outboxResult = outboxProcessor.processPending()
-        val outboxSynced = outboxResult.getOrElse { 0 }
+        // 1. Process outbox via orchestrator (max 50, batch send, backoff, partial failure)
+        val outboxResult = syncOrchestrator.syncPendingEvents()
+        val outboxSynced = outboxResult.getOrElse { SyncOrchestrator.SyncOrchestratorResult(0, 0, 0) }.synced
 
         // 2. Pull deliveries from API and write to Room
         val apiResult = api.getDeliveries()
@@ -48,6 +48,7 @@ class SyncEngine @Inject constructor(
             status = dto.status,
             customerName = dto.customerName,
             customerAddress = dto.customerAddress,
+            customerPhone = dto.customerPhone.orEmpty(),
             lastUpdatedAt = dto.lastUpdatedAt,
             syncedAt = dto.lastUpdatedAt,
             tasks = (dto.tasks ?: emptyList()).map { t ->

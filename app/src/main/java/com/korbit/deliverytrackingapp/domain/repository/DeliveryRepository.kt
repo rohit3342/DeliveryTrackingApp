@@ -19,4 +19,9 @@ interface DeliveryRepository {
     suspend fun insertDeliveriesFromSync(deliveries: List<Delivery>)
 
     suspend fun updateDeliverySyncedAt(deliveryId: String, syncedAt: Long)
+
+    /** Insert a new delivery with tasks (e.g. new pickup created offline). */
+    suspend fun insertDeliveryWithTasks(delivery: Delivery)
+
+    suspend fun getDeliveryCount(): Int
 }
