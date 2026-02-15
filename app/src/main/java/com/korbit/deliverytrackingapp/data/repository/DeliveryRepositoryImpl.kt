@@ -48,6 +48,9 @@ class DeliveryRepositoryImpl @Inject constructor(
         if (taskEntities.isNotEmpty()) deliveryDao.insertTasks(taskEntities)
     }
 
+    override suspend fun getDeliveryById(deliveryId: String): Delivery? =
+        deliveryDao.getDeliveryWithTasksOnce(deliveryId)?.let { toDomain(it.delivery, it.tasks) }
+
     override suspend fun getDeliveryCount(): Int = deliveryDao.getDeliveryCount()
 
     private fun toDomain(e: DeliveryEntity, tasks: List<DeliveryTaskEntity> = emptyList()): Delivery =

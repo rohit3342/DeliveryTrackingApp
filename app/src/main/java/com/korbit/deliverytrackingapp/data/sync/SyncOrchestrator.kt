@@ -1,26 +1,37 @@
 package com.korbit.deliverytrackingapp.data.sync
 
+import com.google.gson.Gson
+import com.google.gson.annotations.SerializedName
 import com.korbit.deliverytrackingapp.core.logging.AppLogger
 import com.korbit.deliverytrackingapp.data.local.dao.TaskActionEventDao
 import com.korbit.deliverytrackingapp.data.local.entity.TaskActionEventEntity
 import com.korbit.deliverytrackingapp.data.remote.api.DeliveryApi
+import com.korbit.deliverytrackingapp.data.remote.dto.DeliveryDto
 import com.korbit.deliverytrackingapp.data.remote.dto.TaskActionRequestDto
+import com.korbit.deliverytrackingapp.data.remote.dto.TaskDto
+import com.korbit.deliverytrackingapp.domain.model.Delivery
+import com.korbit.deliverytrackingapp.domain.repository.DeliveryRepository
 import kotlinx.coroutines.delay
 import java.io.IOException
 import javax.inject.Inject
 import kotlin.math.pow
 
+/** Payload shape for CREATE_PICKUP outbox event (has deliveryId to fetch from Room). */
+private data class CreatePickupPayload(@SerializedName("deliveryId") val deliveryId: String)
+
 /**
  * Orchestrates outbox sync: fetches pending events (max 50), sends to server,
  * marks synced only on success, handles partial failure, retries with exponential backoff.
- * All logging is structured (key=value) for parsing and monitoring.
+ * CREATE_PICKUP events call createTask API; status actions call submitTaskActions batch.
  */
 class SyncOrchestrator @Inject constructor(
     private val taskActionEventDao: TaskActionEventDao,
+    private val deliveryRepository: DeliveryRepository,
     private val api: DeliveryApi,
     private val syncConfig: SyncConfig,
     private val logger: AppLogger
 ) {
+    private val gson = Gson()
     private val tag = "SyncOrchestrator"
 
     companion object {
@@ -79,48 +90,100 @@ class SyncOrchestrator @Inject constructor(
     }
 
     /**
-     * Sends all pending events to the server in one batch call. On success marks all as synced;
-     * on failure increments retry and marks all as failed (retry whole batch next time).
+     * Processes batch: CREATE_PICKUP events go to createTask API (fetch delivery from Room);
+     * other events go to submitTaskActions batch.
      */
     private suspend fun processBatch(events: List<TaskActionEventEntity>): SyncOrchestratorResult {
         if (events.isEmpty()) return SyncOrchestratorResult(synced = 0, failed = 0, skipped = 0)
 
-        val actions = events.map { event ->
-            TaskActionRequestDto(
-                taskId = event.taskId,
-                action = event.action,
-                payload = event.payload.ifEmpty { null },
-                actionTakenAt = if (event.actionTakenAt > 0) event.actionTakenAt else event.createdAt
-            )
-        }
+        val (createEvents, actionEvents) = events.partition { it.action == "CREATE_PICKUP" }
+        var synced = 0
+        var failed = 0
 
-        val response = runCatching { api.submitTaskActions(actions) }.getOrElse { throw it }
-        val now = System.currentTimeMillis()
-
-        if (response.isSuccessful) {
-            events.forEach { event ->
-                taskActionEventDao.markSynced(eventId = event.id, syncedAt = now)
-                logStructured("event_synced", "eventId" to event.id, "taskId" to event.taskId, "action" to event.action)
+        // 1. Sync created tasks via createTask API (one call per create)
+        for (event in createEvents) {
+            val deliveryId = runCatching { gson.fromJson(event.payload, CreatePickupPayload::class.java)?.deliveryId }.getOrNull()
+            if (deliveryId == null) {
+                taskActionEventDao.markFailed(event.id, "invalid_payload")
+                failed++
+                logStructured("create_failed", "eventId" to event.id, "reason" to "missing_deliveryId")
+                continue
             }
-            return SyncOrchestratorResult(synced = events.size, failed = 0, skipped = 0)
+            val delivery = deliveryRepository.getDeliveryById(deliveryId)
+            if (delivery == null) {
+                taskActionEventDao.markFailed(event.id, "delivery_not_found")
+                failed++
+                logStructured("create_failed", "eventId" to event.id, "deliveryId" to deliveryId, "reason" to "not_found")
+                continue
+            }
+            val dto = deliveryToDto(delivery)
+            val response = runCatching { api.createTask(dto) }.getOrElse { throw it }
+            if (response.isSuccessful) {
+                taskActionEventDao.markSynced(eventId = event.id, syncedAt = System.currentTimeMillis())
+                synced++
+                logStructured("event_synced", "eventId" to event.id, "taskId" to event.taskId, "action" to event.action)
+            } else {
+                taskActionEventDao.incrementRetry(event.id)
+                taskActionEventDao.markFailed(event.id, "http_${response.code()}_${response.message().orEmpty()}")
+                failed++
+                logStructured("create_failed", "eventId" to event.id, "code" to response.code())
+            }
         }
 
-        events.forEach { event ->
-            taskActionEventDao.incrementRetry(event.id)
-            taskActionEventDao.markFailed(
-                eventId = event.id,
-                reason = "http_${response.code()}_${response.message().orEmpty()}"
-            )
-            logStructured(
-                "event_failed",
-                "eventId" to event.id,
-                "taskId" to event.taskId,
-                "code" to response.code(),
-                "retryCount" to (event.retryCount + 1)
-            )
+        // 2. Sync status actions in one batch
+        if (actionEvents.isNotEmpty()) {
+            val actions = actionEvents.map { e ->
+                TaskActionRequestDto(
+                    taskId = e.taskId,
+                    action = e.action,
+                    payload = e.payload.ifEmpty { null },
+                    actionTakenAt = if (e.actionTakenAt > 0) e.actionTakenAt else e.createdAt
+                )
+            }
+            val response = runCatching { api.submitTaskActions(actions) }.getOrElse { throw it }
+            val now = System.currentTimeMillis()
+            if (response.isSuccessful) {
+                actionEvents.forEach { e ->
+                    taskActionEventDao.markSynced(eventId = e.id, syncedAt = now)
+                    logStructured("event_synced", "eventId" to e.id, "taskId" to e.taskId, "action" to e.action)
+                }
+                synced += actionEvents.size
+            } else {
+                actionEvents.forEach { e ->
+                    taskActionEventDao.incrementRetry(e.id)
+                    taskActionEventDao.markFailed(e.id, "http_${response.code()}_${response.message().orEmpty()}")
+                    logStructured("event_failed", "eventId" to e.id, "taskId" to e.taskId, "code" to response.code())
+                }
+                failed += actionEvents.size
+            }
         }
-        return SyncOrchestratorResult(synced = 0, failed = events.size, skipped = 0)
+
+        return SyncOrchestratorResult(synced = synced, failed = failed, skipped = 0)
     }
+
+    private fun deliveryToDto(d: Delivery): DeliveryDto =
+        DeliveryDto(
+            id = d.id,
+            riderId = d.riderId,
+            status = d.status,
+            customerName = d.customerName,
+            customerAddress = d.customerAddress,
+            customerPhone = d.customerPhone.ifEmpty { null },
+            warehouseName = d.warehouseName.ifEmpty { null },
+            warehouseAddress = d.warehouseAddress.ifEmpty { null },
+            lastUpdatedAt = d.lastUpdatedAt,
+            tasks = d.tasks.map { t ->
+                TaskDto(
+                    id = t.id,
+                    type = t.type,
+                    status = t.status,
+                    sequence = t.sequence,
+                    completedAt = t.completedAt,
+                    createdAt = t.createdAt,
+                    lastModifiedAt = t.lastModifiedAt
+                )
+            }
+        )
 
     private fun logStructured(event: String, vararg pairs: Pair<String, Any>) {
         val msg = structuredMessage(event, *pairs)

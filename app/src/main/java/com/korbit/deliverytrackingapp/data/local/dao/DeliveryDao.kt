@@ -28,6 +28,10 @@ interface DeliveryDao {
     @Query("SELECT * FROM deliveries WHERE id = :deliveryId")
     fun observeDeliveryWithTasks(deliveryId: String): Flow<DeliveryWithTasks?>
 
+    @Transaction
+    @Query("SELECT * FROM deliveries WHERE id = :deliveryId")
+    suspend fun getDeliveryWithTasksOnce(deliveryId: String): DeliveryWithTasks?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(deliveries: List<DeliveryEntity>)
 

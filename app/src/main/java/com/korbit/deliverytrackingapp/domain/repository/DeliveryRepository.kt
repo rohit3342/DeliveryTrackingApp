@@ -23,5 +23,8 @@ interface DeliveryRepository {
     /** Insert a new delivery with tasks (e.g. new pickup created offline). */
     suspend fun insertDeliveryWithTasks(delivery: Delivery)
 
+    /** Get a single delivery with tasks by id (e.g. for syncing a created task to server). */
+    suspend fun getDeliveryById(deliveryId: String): Delivery?
+
     suspend fun getDeliveryCount(): Int
 }

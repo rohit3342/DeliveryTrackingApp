@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Mock interceptor for development: returns fake JSON for deliveries and task action.
- * Keeps in-memory state for task actions so GET /deliveries reflects applied actions.
+ * Keeps in-memory state for task actions and created deliveries (POST /deliveries).
  * Remove or disable in production.
  */
 class MockApiInterceptor : Interceptor {
@@ -23,17 +23,38 @@ class MockApiInterceptor : Interceptor {
     private val gson = Gson()
     /** taskId -> (status, lastModifiedAt) applied via POST /tasks/action */
     private val taskActionOverrides = ConcurrentHashMap<String, Pair<String, Long>>()
+    /** deliveryId -> DeliveryDto created via POST /deliveries (createTask) */
+    private val createdDeliveries = ConcurrentHashMap<String, DeliveryDto>()
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
         val url = request.url.encodedPath
         val response = when {
             url.endsWith("deliveries") && request.method == "GET" -> buildDeliveriesResponse(request)
+            url.endsWith("deliveries") && request.method == "POST" -> handleCreateTask(request)
             url.contains("deliveries/") && request.method == "GET" -> buildSingleDeliveryResponse(request)
             url.endsWith("tasks/action") && request.method == "POST" -> buildTaskActionResponse(request)
             else -> null
         }
         return response ?: chain.proceed(request)
+    }
+
+    private fun handleCreateTask(request: okhttp3.Request): Response {
+        request.body?.let { body ->
+            val source = Buffer().apply { body.writeTo(this) }
+            val json = source.readUtf8()
+            runCatching {
+                val dto = gson.fromJson(json, DeliveryDto::class.java)
+                createdDeliveries[dto.id] = dto
+            }
+        }
+        return Response.Builder()
+            .request(request)
+            .protocol(Protocol.HTTP_1_1)
+            .code(200)
+            .message("OK")
+            .body("{}".toResponseBody("application/json".toMediaType()))
+            .build()
     }
 
     private fun buildDeliveriesResponse(request: okhttp3.Request): Response {
@@ -47,7 +68,8 @@ class MockApiInterceptor : Interceptor {
             DeliveryDto("d6", "r1", "ACTIVE", "Sophie Chen", "100 Market St, San Francisco, CA 94105", "+1 (415) 555-0321", "Main Warehouse", "100 Industrial Parkway", ts - 18000000L, listOf(TaskDto("t6", "PICKUP", "PENDING", 1, null, ts - 18000000L, ts - 18000000L))),
             DeliveryDto("d7", "r1", "ACTIVE", "Omar Hassan", "3300 S Las Vegas Blvd, Las Vegas, NV 89109", "+1 (702) 555-0890", "South Warehouse", "3300 S Las Vegas Blvd", ts - 21600000L, listOf(TaskDto("t7", "DELIVER", "FAILED", 1, null, ts - 21600000L, ts - 21600000L)))
         )
-        val deliveries = baseDeliveries.map { d ->
+        val allBase = baseDeliveries + createdDeliveries.values.toList()
+        val deliveries = allBase.map { d ->
             val overriddenTasks = d.tasks?.map { t ->
                 taskActionOverrides[t.id]?.let { (status, modifiedAt) ->
                     t.copy(status = status, lastModifiedAt = modifiedAt, completedAt = if (status in listOf("DELIVERED", "FAILED", "PICKED_UP", "REACHED")) modifiedAt else t.completedAt)
