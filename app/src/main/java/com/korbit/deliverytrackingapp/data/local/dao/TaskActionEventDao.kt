@@ -62,4 +62,8 @@ interface TaskActionEventDao {
         reason: String,
         failedStatus: String = TaskActionEventEntity.SyncStatus.FAILED
     )
+
+    /** Removes all events. Used only for load-test reset. */
+    @Query("DELETE FROM task_action_events")
+    suspend fun deleteAll()
 }

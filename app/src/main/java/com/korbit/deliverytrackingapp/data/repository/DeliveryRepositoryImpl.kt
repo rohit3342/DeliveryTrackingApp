@@ -4,8 +4,9 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
 import com.korbit.deliverytrackingapp.data.local.dao.DeliveryDao
-import com.korbit.deliverytrackingapp.data.local.dao.DeliveryTaskDao
 import com.korbit.deliverytrackingapp.data.local.dao.DeliveryDao.TaskWithDeliveryRow
+import com.korbit.deliverytrackingapp.data.local.dao.DeliveryTaskDao
+import com.korbit.deliverytrackingapp.data.local.dao.TaskActionEventDao
 import com.korbit.deliverytrackingapp.data.local.entity.DeliveryEntity
 import com.korbit.deliverytrackingapp.data.local.entity.DeliveryTaskEntity
 import com.korbit.deliverytrackingapp.data.sync.SyncConfig
@@ -20,6 +21,7 @@ import javax.inject.Inject
 class DeliveryRepositoryImpl @Inject constructor(
     private val deliveryDao: DeliveryDao,
     private val deliveryTaskDao: DeliveryTaskDao,
+    private val taskActionEventDao: TaskActionEventDao,
     private val syncConfig: SyncConfig
 ) : DeliveryRepository {
 
@@ -80,6 +82,11 @@ class DeliveryRepositoryImpl @Inject constructor(
     override suspend fun getDeliveryCount(): Int = deliveryDao.getDeliveryCount()
 
     override suspend fun getTaskCount(statusFilter: String): Int = deliveryDao.getTaskCount(statusFilter)
+
+    override suspend fun clearAllForTesting() {
+        taskActionEventDao.deleteAll()
+        deliveryDao.deleteAll()
+    }
 
     private fun toDomain(e: DeliveryEntity, tasks: List<DeliveryTaskEntity> = emptyList()): Delivery =
         Delivery(

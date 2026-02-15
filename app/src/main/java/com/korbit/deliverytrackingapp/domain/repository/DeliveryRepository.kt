@@ -35,4 +35,7 @@ interface DeliveryRepository {
 
     /** Task count by filter (ALL, ACTIVE, DONE) for list header. */
     suspend fun getTaskCount(statusFilter: String): Int
+
+    /** Clears all deliveries (cascades to tasks) and outbox. For load testing only. */
+    suspend fun clearAllForTesting()
 }
