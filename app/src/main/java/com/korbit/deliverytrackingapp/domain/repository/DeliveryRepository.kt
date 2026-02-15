@@ -14,7 +14,7 @@ interface DeliveryRepository {
 
     fun observeDeliveryWithTasks(deliveryId: String): Flow<Delivery?>
 
-    suspend fun updateTaskStatus(taskId: String, status: String, completedAt: Long?)
+    suspend fun updateTaskStatus(taskId: String, status: String, completedAt: Long?, updatedAt: Long = System.currentTimeMillis())
 
     suspend fun insertDeliveriesFromSync(deliveries: List<Delivery>)
 

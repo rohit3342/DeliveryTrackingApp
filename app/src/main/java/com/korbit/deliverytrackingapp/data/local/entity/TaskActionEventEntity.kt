@@ -20,6 +20,7 @@ data class TaskActionEventEntity(
     val taskId: String,
     val action: String,
     val payload: String,
+    val actionTakenAt: Long = 0L,
     val syncStatus: String = SyncStatus.PENDING,
     val createdAt: Long,
     val syncedAt: Long? = null,

@@ -3,6 +3,7 @@ package com.korbit.deliverytrackingapp.presentation.tasks
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.korbit.deliverytrackingapp.core.logging.AppLogger
+import com.korbit.deliverytrackingapp.domain.repository.OutboxRepository
 import com.korbit.deliverytrackingapp.domain.usecase.CreatePickupTaskUseCase
 import com.korbit.deliverytrackingapp.domain.usecase.EnsureSeedDataUseCase
 import com.korbit.deliverytrackingapp.domain.usecase.ObserveAllTasksUseCase
@@ -24,6 +25,7 @@ class TasksViewModel @Inject constructor(
     private val createPickupTaskUseCase: CreatePickupTaskUseCase,
     private val triggerSyncUseCase: TriggerSyncUseCase,
     private val runFullSyncUseCase: RunFullSyncUseCase,
+    private val outboxRepository: OutboxRepository,
     private val logger: AppLogger
 ) : ViewModel() {
 
@@ -47,7 +49,10 @@ class TasksViewModel @Inject constructor(
             is TasksIntent.OpenTask -> { /* navigation in UI */ }
             is TasksIntent.ShowCreatePickup -> _state.update { it.copy(showCreatePickupDialog = true) }
             is TasksIntent.DismissCreatePickup -> _state.update { it.copy(showCreatePickupDialog = false) }
-            is TasksIntent.CreatePickup -> createPickup(intent.customerName, intent.customerAddress, intent.customerPhone)
+            is TasksIntent.CreatePickup -> createPickup(
+                intent.orderId, intent.warehouseName, intent.warehouseAddress,
+                intent.customerName, intent.customerAddress, intent.customerPhone
+            )
             is TasksIntent.ManualSync -> runManualSync()
             is TasksIntent.ClearSyncMessage -> _state.update { it.copy(syncMessage = null) }
         }
@@ -63,18 +68,31 @@ class TasksViewModel @Inject constructor(
                     _state.update { it.copy(isLoading = false, error = e.message) }
                 }
                 .collect { list ->
+                    val pending = outboxRepository.getPendingCount()
                     _state.update {
-                        it.copy(tasks = list, isLoading = false, error = null)
+                        it.copy(tasks = list, isLoading = false, error = null, pendingSyncCount = pending)
                     }
                 }
         }
     }
 
-    private fun createPickup(customerName: String, customerAddress: String, customerPhone: String) {
+    private suspend fun refreshPendingSyncCount() {
+        _state.update { it.copy(pendingSyncCount = outboxRepository.getPendingCount()) }
+    }
+
+    private fun createPickup(
+        orderId: String,
+        warehouseName: String,
+        warehouseAddress: String,
+        customerName: String,
+        customerAddress: String,
+        customerPhone: String
+    ) {
         viewModelScope.launch {
             try {
-                createPickupTaskUseCase(customerName, customerAddress, customerPhone)
+                createPickupTaskUseCase(orderId, warehouseName, warehouseAddress, customerName, customerAddress, customerPhone)
                 triggerSyncUseCase()
+                refreshPendingSyncCount()
                 _state.update { it.copy(showCreatePickupDialog = false) }
                 logger.d(tag, "Pickup created offline, sync triggered")
             } catch (e: Exception) {
@@ -87,9 +105,10 @@ class TasksViewModel @Inject constructor(
     private fun runManualSync() {
         viewModelScope.launch {
             _state.update { it.copy(isSyncing = true, syncMessage = "Syncing...") }
-            runFullSyncUseCase()
+                runFullSyncUseCase()
                 .fold(
                     onSuccess = { result ->
+                        refreshPendingSyncCount()
                         _state.update {
                             it.copy(
                                 isSyncing = false,
@@ -99,6 +118,7 @@ class TasksViewModel @Inject constructor(
                     },
                     onFailure = { e ->
                         logger.e(tag, "Manual sync failed", e)
+                        refreshPendingSyncCount()
                         _state.update {
                             it.copy(isSyncing = false, syncMessage = "Sync failed: ${e.message}")
                         }

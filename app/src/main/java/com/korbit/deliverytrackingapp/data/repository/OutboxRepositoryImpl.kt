@@ -18,11 +18,15 @@ class OutboxRepositoryImpl @Inject constructor(
                 taskId = action.taskId,
                 action = action.action,
                 payload = action.payload ?: "",
+                actionTakenAt = action.actionTakenAt,
                 syncStatus = TaskActionEventEntity.SyncStatus.PENDING,
                 createdAt = System.currentTimeMillis()
             )
         )
     }
+
+    override suspend fun getPendingCount(): Int =
+        taskActionEventDao.getPendingCount()
 
     override suspend fun getPendingEvents(): List<OutboxRepository.OutboxEvent> =
         taskActionEventDao.getPendingEvents(limit = defaultPendingLimit).map { e ->
@@ -30,7 +34,8 @@ class OutboxRepositoryImpl @Inject constructor(
                 id = e.id,
                 taskId = e.taskId,
                 action = e.action,
-                payload = e.payload
+                payload = e.payload,
+                actionTakenAt = e.actionTakenAt
             )
         }
 

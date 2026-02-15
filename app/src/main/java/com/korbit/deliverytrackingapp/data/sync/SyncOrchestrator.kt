@@ -90,7 +90,8 @@ class SyncOrchestrator @Inject constructor(
             val request = TaskActionRequestDto(
                 taskId = event.taskId,
                 action = event.action,
-                payload = event.payload.ifEmpty { null }
+                payload = event.payload.ifEmpty { null },
+                actionTakenAt = if (event.actionTakenAt > 0) event.actionTakenAt else event.createdAt
             )
             val response = runCatching { api.submitTaskAction(request) }.getOrElse { throw it }
 

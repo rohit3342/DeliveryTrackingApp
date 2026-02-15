@@ -24,9 +24,10 @@ class DeliveryRepositoryImpl @Inject constructor(
     override fun observeDeliveryWithTasks(deliveryId: String): Flow<Delivery?> =
         deliveryDao.observeDeliveryWithTasks(deliveryId).map { it?.let { d -> toDomain(d.delivery, d.tasks) } }
 
-    override suspend fun updateTaskStatus(taskId: String, status: String, completedAt: Long?) {
+    override suspend fun updateTaskStatus(taskId: String, status: String, completedAt: Long?, updatedAt: Long) {
         val task = deliveryTaskDao.getTaskById(taskId) ?: return
-        val updated = task.copy(status = status, completedAt = completedAt)
+        val wasEverPicked = task.wasEverPicked || (status == "PICKED_UP")
+        val updated = task.copy(status = status, completedAt = completedAt, updatedAt = updatedAt, wasEverPicked = wasEverPicked)
         deliveryDao.insertTasks(listOf(updated))
     }
 
@@ -69,7 +70,10 @@ class DeliveryRepositoryImpl @Inject constructor(
             type = e.type,
             status = e.status,
             sequence = e.sequence,
-            completedAt = e.completedAt
+            completedAt = e.completedAt,
+            createdAt = e.createdAt,
+            lastModifiedAt = e.updatedAt,
+            wasEverPicked = e.wasEverPicked
         )
 
     private fun fromDomain(d: Delivery): Pair<DeliveryEntity, List<DeliveryTaskEntity>> =
@@ -94,6 +98,9 @@ class DeliveryRepositoryImpl @Inject constructor(
             type = t.type,
             status = t.status,
             sequence = t.sequence,
-            completedAt = t.completedAt
+            completedAt = t.completedAt,
+            createdAt = t.createdAt,
+            updatedAt = t.lastModifiedAt,
+            wasEverPicked = t.wasEverPicked
         )
 }

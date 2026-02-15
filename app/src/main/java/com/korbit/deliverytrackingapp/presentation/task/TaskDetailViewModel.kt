@@ -63,16 +63,18 @@ class TaskDetailViewModel @Inject constructor(
     private fun performAction(task: DeliveryTask, action: TaskActionType) {
         viewModelScope.launch {
             try {
+                val actionTakenAt = System.currentTimeMillis()
                 val completedAt = when (action) {
                     TaskActionType.REACHED, TaskActionType.PICKED_UP,
-                    TaskActionType.DELIVERED, TaskActionType.FAILED -> System.currentTimeMillis()
+                    TaskActionType.DELIVERED, TaskActionType.FAILED -> actionTakenAt
                 }
                 updateTaskStatusUseCase(
                     taskId = task.id,
                     status = action.value,
                     completedAt = completedAt,
                     action = action.value,
-                    payload = null
+                    payload = null,
+                    actionTakenAt = actionTakenAt
                 )
                 triggerSyncUseCase()
                 logger.d(tag, "Task ${task.id} action=${action.value} (Room + Outbox, sync triggered)")

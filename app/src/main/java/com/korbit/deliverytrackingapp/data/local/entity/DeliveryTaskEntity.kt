@@ -23,5 +23,9 @@ data class DeliveryTaskEntity(
     val type: String,
     val status: String,
     val sequence: Int,
-    val completedAt: Long?
+    val completedAt: Long?,
+    val createdAt: Long = 0L,
+    val updatedAt: Long = 0L,
+    /** True if this task has ever been in PICKED_UP status. */
+    val wasEverPicked: Boolean = false
 )

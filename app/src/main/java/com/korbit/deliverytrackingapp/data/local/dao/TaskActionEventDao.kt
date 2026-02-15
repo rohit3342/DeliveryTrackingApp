@@ -9,6 +9,9 @@ import com.korbit.deliverytrackingapp.data.local.entity.TaskActionEventEntity
 @Dao
 interface TaskActionEventDao {
 
+    @Query("SELECT COUNT(*) FROM task_action_events WHERE syncStatus = :status")
+    suspend fun getPendingCount(status: String = TaskActionEventEntity.SyncStatus.PENDING): Int
+
     @Query(
         "SELECT * FROM task_action_events WHERE syncStatus = :status ORDER BY createdAt ASC LIMIT :limit"
     )

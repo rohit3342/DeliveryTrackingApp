@@ -16,6 +16,9 @@ class CreatePickupTaskUseCase @Inject constructor(
     private val outboxRepository: OutboxRepository
 ) {
     suspend operator fun invoke(
+        orderId: String,
+        warehouseName: String,
+        warehouseAddress: String,
         customerName: String,
         customerAddress: String,
         customerPhone: String
@@ -39,16 +42,19 @@ class CreatePickupTaskUseCase @Inject constructor(
                     type = "PICKUP",
                     status = "PENDING",
                     sequence = 1,
-                    completedAt = null
+                    completedAt = null,
+                    createdAt = now,
+                    lastModifiedAt = now
                 )
             )
         )
         deliveryRepository.insertDeliveryWithTasks(delivery)
+        val payload = """{"deliveryId":"$deliveryId","orderId":"$orderId","warehouseName":"$warehouseName","warehouseAddress":"$warehouseAddress","customerName":"$customerName","address":"$customerAddress","phone":"$customerPhone"}"""
         outboxRepository.enqueueTaskAction(
             com.korbit.deliverytrackingapp.domain.model.TaskAction(
                 taskId = taskId,
                 action = "CREATE_PICKUP",
-                payload = """{"deliveryId":"$deliveryId","customerName":"$customerName","address":"$customerAddress","phone":"$customerPhone"}"""
+                payload = payload
             )
         )
         return delivery to delivery.tasks.first()

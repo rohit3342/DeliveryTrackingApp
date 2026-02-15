@@ -5,5 +5,6 @@ import com.google.gson.annotations.SerializedName
 data class TaskActionRequestDto(
     @SerializedName("task_id") val taskId: String,
     @SerializedName("action") val action: String,
-    @SerializedName("payload") val payload: String?
+    @SerializedName("payload") val payload: String?,
+    @SerializedName("action_taken_at") val actionTakenAt: Long? = null
 )

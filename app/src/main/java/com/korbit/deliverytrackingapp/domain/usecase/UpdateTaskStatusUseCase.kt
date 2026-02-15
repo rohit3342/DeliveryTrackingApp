@@ -18,9 +18,12 @@ class UpdateTaskStatusUseCase @Inject constructor(
         status: String,
         completedAt: Long?,
         action: String,
-        payload: String? = null
+        payload: String? = null,
+        actionTakenAt: Long = System.currentTimeMillis()
     ) {
-        deliveryRepository.updateTaskStatus(taskId, status, completedAt)
-        outboxRepository.enqueueTaskAction(TaskAction(taskId = taskId, action = action, payload = payload))
+        deliveryRepository.updateTaskStatus(taskId, status, completedAt, updatedAt = actionTakenAt)
+        outboxRepository.enqueueTaskAction(
+            TaskAction(taskId = taskId, action = action, payload = payload, actionTakenAt = actionTakenAt)
+        )
     }
 }

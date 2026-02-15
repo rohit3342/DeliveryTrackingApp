@@ -52,13 +52,17 @@ class SyncEngine @Inject constructor(
             lastUpdatedAt = dto.lastUpdatedAt,
             syncedAt = dto.lastUpdatedAt,
             tasks = (dto.tasks ?: emptyList()).map { t ->
+                val wasEverPicked = t.status in listOf("PICKED_UP", "REACHED", "DELIVERED")
                 DeliveryTask(
                     id = t.id,
                     deliveryId = dto.id,
                     type = t.type,
                     status = t.status,
                     sequence = t.sequence,
-                    completedAt = t.completedAt
+                    completedAt = t.completedAt,
+                    createdAt = dto.lastUpdatedAt,
+                    lastModifiedAt = dto.lastUpdatedAt,
+                    wasEverPicked = wasEverPicked
                 )
             }
         )

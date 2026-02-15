@@ -19,6 +19,25 @@ internal val MIGRATION_2_3 = object : Migration(2, 3) {
     }
 }
 
+internal val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE delivery_tasks ADD COLUMN createdAt INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("ALTER TABLE delivery_tasks ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT 0")
+    }
+}
+
+internal val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE task_action_events ADD COLUMN actionTakenAt INTEGER NOT NULL DEFAULT 0")
+    }
+}
+
+internal val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE delivery_tasks ADD COLUMN wasEverPicked INTEGER NOT NULL DEFAULT 0")
+    }
+}
+
 @Database(
     entities = [
         DeliveryEntity::class,
@@ -26,7 +45,7 @@ internal val MIGRATION_2_3 = object : Migration(2, 3) {
         TaskEntity::class,
         TaskActionEventEntity::class
     ],
-    version = 3,
+    version = 6,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

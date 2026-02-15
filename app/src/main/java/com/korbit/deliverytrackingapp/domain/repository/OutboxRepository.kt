@@ -12,6 +12,8 @@ interface OutboxRepository {
 
     suspend fun getPendingEvents(): List<OutboxEvent>
 
+    suspend fun getPendingCount(): Int
+
     suspend fun markSynced(id: Long, syncedAt: Long)
 
     suspend fun markFailed(id: Long, reason: String)
@@ -20,6 +22,7 @@ interface OutboxRepository {
         val id: Long,
         val taskId: String,
         val action: String,
-        val payload: String
+        val payload: String,
+        val actionTakenAt: Long = 0L
     )
 }

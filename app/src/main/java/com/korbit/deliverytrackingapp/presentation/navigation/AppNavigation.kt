@@ -34,7 +34,7 @@ fun AppNavigation(
             route = TASK_DETAIL_ROUTE,
             arguments = listOf(navArgument(DELIVERY_ID_ARG) { defaultValue = "" })
         ) {
-            TaskDetailScreen()
+            TaskDetailScreen(onBack = { navController.popBackStack() })
         }
     }
 }

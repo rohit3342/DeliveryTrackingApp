@@ -15,7 +15,7 @@ class ObserveAllTasksUseCase @Inject constructor(
             deliveries.flatMap { d ->
                 d.tasks.map { t -> TaskWithDelivery(task = t, delivery = d) }
             }.sortedWith(
-                compareBy<TaskWithDelivery> { it.delivery.lastUpdatedAt }.reversed()
+                compareByDescending<TaskWithDelivery> { it.task.createdAt }
                     .thenBy { it.task.sequence }
             )
         }
