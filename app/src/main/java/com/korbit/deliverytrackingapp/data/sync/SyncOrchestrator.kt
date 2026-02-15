@@ -100,33 +100,43 @@ class SyncOrchestrator @Inject constructor(
         var synced = 0
         var failed = 0
 
-        // 1. Sync created tasks via createTask API (one call per create)
-        for (event in createEvents) {
-            val deliveryId = runCatching { gson.fromJson(event.payload, CreatePickupPayload::class.java)?.deliveryId }.getOrNull()
-            if (deliveryId == null) {
-                taskActionEventDao.markFailed(event.id, "invalid_payload")
-                failed++
-                logStructured("create_failed", "eventId" to event.id, "reason" to "missing_deliveryId")
-                continue
+        // 1. Sync created tasks via createTasks bulk API (one call for all)
+        if (createEvents.isNotEmpty()) {
+            val valid = mutableListOf<Pair<TaskActionEventEntity, DeliveryDto>>()
+            for (event in createEvents) {
+                val deliveryId = runCatching { gson.fromJson(event.payload, CreatePickupPayload::class.java)?.deliveryId }.getOrNull()
+                if (deliveryId == null) {
+                    taskActionEventDao.markFailed(event.id, "invalid_payload")
+                    failed++
+                    logStructured("create_failed", "eventId" to event.id, "reason" to "missing_deliveryId")
+                    continue
+                }
+                val delivery = deliveryRepository.getDeliveryById(deliveryId)
+                if (delivery == null) {
+                    taskActionEventDao.markFailed(event.id, "delivery_not_found")
+                    failed++
+                    logStructured("create_failed", "eventId" to event.id, "deliveryId" to deliveryId, "reason" to "not_found")
+                    continue
+                }
+                valid.add(event to deliveryToDto(delivery))
             }
-            val delivery = deliveryRepository.getDeliveryById(deliveryId)
-            if (delivery == null) {
-                taskActionEventDao.markFailed(event.id, "delivery_not_found")
-                failed++
-                logStructured("create_failed", "eventId" to event.id, "deliveryId" to deliveryId, "reason" to "not_found")
-                continue
-            }
-            val dto = deliveryToDto(delivery)
-            val response = runCatching { api.createTask(dto) }.getOrElse { throw it }
-            if (response.isSuccessful) {
-                taskActionEventDao.markSynced(eventId = event.id, syncedAt = System.currentTimeMillis())
-                synced++
-                logStructured("event_synced", "eventId" to event.id, "taskId" to event.taskId, "action" to event.action)
-            } else {
-                taskActionEventDao.incrementRetry(event.id)
-                taskActionEventDao.markFailed(event.id, "http_${response.code()}_${response.message().orEmpty()}")
-                failed++
-                logStructured("create_failed", "eventId" to event.id, "code" to response.code())
+            if (valid.isNotEmpty()) {
+                val dtos = valid.map { it.second }
+                val response = runCatching { api.createTasks(dtos) }.getOrElse { throw it }
+                val now = System.currentTimeMillis()
+                if (response.isSuccessful) {
+                    valid.forEach { (event, _) ->
+                        taskActionEventDao.markSynced(eventId = event.id, syncedAt = now)
+                        logStructured("event_synced", "eventId" to event.id, "taskId" to event.taskId, "action" to event.action)
+                    }
+                    synced += valid.size
+                } else {
+                    valid.forEach { (event, _) ->
+                        taskActionEventDao.incrementRetry(event.id)
+                        logStructured("create_failed", "eventId" to event.id, "code" to response.code(), "will_retry" to true)
+                    }
+                    failed += valid.size
+                }
             }
         }
 

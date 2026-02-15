@@ -31,7 +31,7 @@ class MockApiInterceptor : Interceptor {
         val url = request.url.encodedPath
         val response = when {
             url.endsWith("deliveries") && request.method == "GET" -> buildDeliveriesResponse(request)
-            url.endsWith("deliveries") && request.method == "POST" -> handleCreateTask(request)
+            url.endsWith("tasks/create") && request.method == "POST" -> handleCreateTasks(request)
             url.contains("deliveries/") && request.method == "GET" -> buildSingleDeliveryResponse(request)
             url.endsWith("tasks/action") && request.method == "POST" -> buildTaskActionResponse(request)
             else -> null
@@ -39,13 +39,15 @@ class MockApiInterceptor : Interceptor {
         return response ?: chain.proceed(request)
     }
 
-    private fun handleCreateTask(request: okhttp3.Request): Response {
+    private fun handleCreateTasks(request: okhttp3.Request): Response {
         request.body?.let { body ->
             val source = Buffer().apply { body.writeTo(this) }
             val json = source.readUtf8()
             runCatching {
-                val dto = gson.fromJson(json, DeliveryDto::class.java)
-                createdDeliveries[dto.id] = dto
+                val type = object : TypeToken<List<DeliveryDto>>() {}.type
+                @Suppress("UNCHECKED_CAST")
+                val list = gson.fromJson<List<DeliveryDto>>(json, type) ?: emptyList()
+                list.forEach { dto -> createdDeliveries[dto.id] = dto }
             }
         }
         return Response.Builder()
