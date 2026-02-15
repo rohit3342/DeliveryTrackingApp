@@ -53,3 +53,4 @@ obj/
 
 # Signing
 signing/
+.trackify.jsonl
