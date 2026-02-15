@@ -27,7 +27,9 @@ class DeliveryRepositoryImpl @Inject constructor(
     override suspend fun updateTaskStatus(taskId: String, status: String, completedAt: Long?, updatedAt: Long) {
         val task = deliveryTaskDao.getTaskById(taskId) ?: return
         val wasEverPicked = task.wasEverPicked || (status == "PICKED_UP")
-        val updated = task.copy(status = status, completedAt = completedAt, updatedAt = updatedAt, wasEverPicked = wasEverPicked)
+        // After successful pickup, transition task type from PICKUP to DELIVER so it represents the delivery leg.
+        val newType = if (status == "PICKED_UP" && task.type.equals("PICKUP", ignoreCase = true)) "DELIVER" else task.type
+        val updated = task.copy(type = newType, status = status, completedAt = completedAt, updatedAt = updatedAt, wasEverPicked = wasEverPicked)
         deliveryDao.insertTasks(listOf(updated))
     }
 

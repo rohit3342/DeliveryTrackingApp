@@ -91,7 +91,7 @@ class EnsureSeedDataUseCase @Inject constructor(
                 lastUpdatedAt = now - 4 * oneHour,
                 syncedAt = null,
                 tasks = listOf(
-                    DeliveryTask("t_seed_5a", "seed_5", "DELIVER", "FAILED", 1, null, now - 5 * oneHour, now - 4 * oneHour)
+                    DeliveryTask("t_seed_5a", "seed_5", "DELIVER", "FAILED", 1, null, now - 5 * oneHour, now - 4 * oneHour, wasEverPicked = true)
                 )
             ),
             // FAILED, was picked before – only "Reached" button

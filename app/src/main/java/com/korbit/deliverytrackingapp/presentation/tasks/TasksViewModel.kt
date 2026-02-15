@@ -26,10 +26,15 @@ class TasksViewModel @Inject constructor(
     private val triggerSyncUseCase: TriggerSyncUseCase,
     private val runFullSyncUseCase: RunFullSyncUseCase,
     private val outboxRepository: OutboxRepository,
-    private val logger: AppLogger
+    private val logger: AppLogger,
+    private val monitor: Monitor
 ) : ViewModel() {
 
     private val tag = "TasksViewModel"
+
+    companion object {
+        private const val COMPONENT = "tasks_view_model"
+    }
 
     private val _state = MutableStateFlow(TasksState())
     val state: StateFlow<TasksState> = _state.asStateFlow()

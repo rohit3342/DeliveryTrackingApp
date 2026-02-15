@@ -61,7 +61,7 @@ class TaskDetailViewModel @Inject constructor(
                     _state.update { it.copy(isLoading = false, error = e.message) }
                 }
                 .collect { delivery ->
-                    monitor.recordEvent(COMPONENT, "load_success", mapOf("delivery_id" to deliveryId, "tasks_count" to delivery.tasks.size))
+                    monitor.recordEvent(COMPONENT, "load_success", mapOf("delivery_id" to deliveryId, "tasks_count" to delivery?.tasks?.size))
                     _state.update {
                         it.copy(delivery = delivery, isLoading = false, error = null)
                     }

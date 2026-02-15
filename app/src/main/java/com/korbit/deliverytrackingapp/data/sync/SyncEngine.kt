@@ -72,7 +72,7 @@ class SyncEngine @Inject constructor(
             lastUpdatedAt = dto.lastUpdatedAt,
             syncedAt = dto.lastUpdatedAt,
             tasks = (dto.tasks ?: emptyList()).map { t ->
-                val wasEverPicked = t.status in listOf("PICKED_UP", "REACHED", "DELIVERED")
+                val wasEverPicked = t.type in listOf("DELIVER")
                 DeliveryTask(
                     id = t.id,
                     deliveryId = dto.id,

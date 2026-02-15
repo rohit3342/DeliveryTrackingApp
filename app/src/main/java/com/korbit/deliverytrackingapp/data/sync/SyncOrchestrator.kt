@@ -38,9 +38,6 @@ class SyncOrchestrator @Inject constructor(
 
     companion object {
         private const val COMPONENT = "sync_orchestrator"
-    }
-
-    companion object {
         private const val MAX_RETRY_ATTEMPTS = 5
         private const val BASE_BACKOFF_MS = 1000L
     }
