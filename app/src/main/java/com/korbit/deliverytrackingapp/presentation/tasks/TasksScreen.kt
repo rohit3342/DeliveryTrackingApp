@@ -101,45 +101,49 @@ fun TasksScreen(
                 }
             }
             Box(modifier = Modifier.fillMaxSize()) {
-            when {
-                state.isLoading && state.tasks.isEmpty() -> {
-                    CircularProgressIndicator(Modifier.align(Alignment.Center))
-                }
-                state.error != null -> {
-                    Text(
-                        text = state.error ?: "Error",
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .padding(16.dp)
-                    )
-                }
-                state.filteredTasks.isEmpty() -> {
-                    Column(
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .padding(32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Text(if (state.tasks.isEmpty()) "No tasks assigned" else "No tasks for this filter")
-                        Button(onClick = { viewModel.handle(TasksIntent.ShowCreatePickup) }) {
-                            Text("Create pickup")
+                when {
+                    state.isLoading && state.tasks.isEmpty() -> {
+                        CircularProgressIndicator(Modifier.align(Alignment.Center))
+                    }
+
+                    state.error != null -> {
+                        Text(
+                            text = state.error ?: "Error",
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .padding(16.dp)
+                        )
+                    }
+
+                    state.filteredTasks.isEmpty() -> {
+                        Column(
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .padding(32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Text(if (state.tasks.isEmpty()) "No tasks assigned" else "No tasks for this filter")
+                            Button(onClick = { viewModel.handle(TasksIntent.ShowCreatePickup) }) {
+                                Text("Create pickup")
+                            }
                         }
                     }
-                }
-                else -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        items(
-                            state.filteredTasks,
-                            key = { "${it.delivery.id}_${it.task.id}" }
-                        ) { twd ->
-                            TaskWithDeliveryItem(
-                                taskWithDelivery = twd,
-                                onClick = { onTaskClick(twd.delivery.id, twd.task.id) }
-                            )
+
+                    else -> {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            items(
+                                state.filteredTasks,
+                                key = { "${it.delivery.id}_${it.task.id}" }
+                            ) { twd ->
+                                TaskWithDeliveryItem(
+                                    taskWithDelivery = twd,
+                                    onClick = { onTaskClick(twd.delivery.id, twd.task.id) }
+                                )
+                            }
                         }
                     }
                 }
