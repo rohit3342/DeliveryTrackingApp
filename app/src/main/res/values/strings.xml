@@ -3,7 +3,6 @@
     <string name="app_name">Delivery Tracking</string>
 
     <!-- Tasks list -->
-    <string name="assigned_tasks">Assigned Tasks</string>
     <string name="sync">Sync</string>
     <string name="sync_content_description">Sync</string>
     <string name="pending_sync">pending sync</string>
@@ -11,8 +10,6 @@
     <string name="sync_done_content_description">Done</string>
     <string name="new_pickup_content_description">New pickup</string>
     <string name="error_generic">Error</string>
-    <string name="no_tasks_assigned">No tasks assigned</string>
-    <string name="no_tasks_for_filter">No tasks for this filter</string>
     <string name="no_tasks_found">No tasks found</string>
     <string name="create_first_task">Create your first task</string>
     <string name="create_pickup">Create pickup</string>
@@ -66,9 +63,6 @@
     <string name="actions_section">Actions</string>
     <string name="loading">Loading…</string>
     <string name="no_delivery">No delivery</string>
-    <string name="created">Created: %1$s</string>
-    <string name="last_modified">Last modified: %1$s</string>
-    <string name="modified">Modified: %1$s</string>
 
     <!-- Tracking timeline -->
     <string name="tracking_timeline">Tracking</string>
@@ -84,17 +78,6 @@
     <string name="timeline_at">%1$s at %2$s</string>
     <string name="timeline_pending">Pending</string>
 
-    <!-- Status labels (for pills / timeline) -->
-    <string name="status_assigned">Assigned</string>
-    <string name="status_picked">Picked</string>
-    <string name="status_reached">Reached</string>
-    <string name="status_delivered">Delivered</string>
-    <string name="status_failed">Failed</string>
-
-    <!-- Task type labels -->
-    <string name="task_type_pickup">Pickup</string>
-    <string name="task_type_deliver">Deliver</string>
-
     <!-- Action button labels (user-friendly) -->
     <string name="action_mark_picked">Mark as picked from warehouse</string>
     <string name="action_order_picked_up">Order Picked Up</string>
@@ -104,8 +87,6 @@
     <string name="action_delivered">Delivered</string>
     <string name="action_mark_failed">Mark as failed delivery</string>
     <string name="action_failed">Failed</string>
-    <string name="action_return_to_warehouse">Return to Warehouse</string>
     <string name="action_mark_failed_pickup">Mark as failed pickup</string>
     <string name="status_in_transit">IN TRANSIT</string>
-    <string name="failure_reason_hint">Reason for failure (optional)</string>
 </resources>

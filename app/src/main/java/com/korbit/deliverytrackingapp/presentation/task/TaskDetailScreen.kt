@@ -50,7 +50,6 @@ import com.korbit.deliverytrackingapp.R
 import com.korbit.deliverytrackingapp.domain.model.Delivery
 import com.korbit.deliverytrackingapp.domain.model.DeliveryTask
 import com.korbit.deliverytrackingapp.domain.model.TaskActionType
-import com.korbit.deliverytrackingapp.presentation.theme.StatusColors
 import com.korbit.deliverytrackingapp.presentation.util.TimeFormat
 
 private val ScreenBg = Color(0xFFF5F5F5)
