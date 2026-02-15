@@ -1,6 +1,7 @@
 package com.korbit.deliverytrackingapp.domain.repository
 
 import com.korbit.deliverytrackingapp.domain.model.TaskAction
+import kotlinx.coroutines.flow.Flow
 
 /**
  * Outbox for task action events. All task actions write to Room + Outbox first.
@@ -13,6 +14,8 @@ interface OutboxRepository {
     suspend fun getPendingEvents(): List<OutboxEvent>
 
     suspend fun getPendingCount(): Int
+
+    fun observeUnsyncedTaskIds(): Flow<List<String>>
 
     suspend fun markSynced(id: Long, syncedAt: Long)
 

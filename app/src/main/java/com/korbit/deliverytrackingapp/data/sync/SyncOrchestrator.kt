@@ -45,19 +45,19 @@ class SyncOrchestrator @Inject constructor(
      */
     suspend fun syncPendingEvents(): Result<SyncOrchestratorResult> = runCatching {
         val batchSize = syncConfig.outboxBatchSize
-        val pending = taskActionEventDao.getPendingEvents(limit = batchSize)
-        if (pending.isEmpty()) {
+        val toSync = taskActionEventDao.getEventsToSync(limit = batchSize)
+        if (toSync.isEmpty()) {
             logStructured("batch_empty", "size" to 0)
             return@runCatching SyncOrchestratorResult(synced = 0, failed = 0, skipped = 0)
         }
 
-        logStructured("batch_start", "size" to pending.size, "max" to batchSize)
+        logStructured("batch_start", "size" to toSync.size, "max" to batchSize)
         var attempt = 0
         var lastException: Throwable? = null
 
         while (attempt < MAX_RETRY_ATTEMPTS) {
             try {
-                val result = processBatch(pending)
+                val result = processBatch(toSync)
                 logStructured(
                     "batch_complete",
                     "synced" to result.synced,

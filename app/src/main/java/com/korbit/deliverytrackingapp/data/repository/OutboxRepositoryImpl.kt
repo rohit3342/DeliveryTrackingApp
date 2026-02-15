@@ -4,6 +4,7 @@ import com.korbit.deliverytrackingapp.data.local.dao.TaskActionEventDao
 import com.korbit.deliverytrackingapp.data.local.entity.TaskActionEventEntity
 import com.korbit.deliverytrackingapp.domain.model.TaskAction
 import com.korbit.deliverytrackingapp.domain.repository.OutboxRepository
+import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 class OutboxRepositoryImpl @Inject constructor(
@@ -26,10 +27,13 @@ class OutboxRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getPendingCount(): Int =
-        taskActionEventDao.getPendingCount()
+        taskActionEventDao.getUnsyncedCount()
+
+    override fun observeUnsyncedTaskIds(): Flow<List<String>> =
+        taskActionEventDao.observeUnsyncedTaskIds()
 
     override suspend fun getPendingEvents(): List<OutboxRepository.OutboxEvent> =
-        taskActionEventDao.getPendingEvents(limit = defaultPendingLimit).map { e ->
+        taskActionEventDao.getEventsToSync(limit = defaultPendingLimit).map { e ->
             OutboxRepository.OutboxEvent(
                 id = e.id,
                 taskId = e.taskId,

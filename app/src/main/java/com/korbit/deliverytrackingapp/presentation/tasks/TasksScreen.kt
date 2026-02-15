@@ -111,24 +111,24 @@ fun TasksScreen(
                             )
                         )
                     }
-                    IconButton(
-                        onClick = { viewModel.handle(TasksIntent.ManualSync) },
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        if (state.isSyncing) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                color = Color.White,
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            Icon(
-                                Icons.Filled.Sync,
-                                contentDescription = stringResource(R.string.sync_content_description),
-                                tint = Color.White
-                            )
-                        }
-                    }
+//                    IconButton(
+//                        onClick = { viewModel.handle(TasksIntent.ManualSync) },
+//                        modifier = Modifier.size(48.dp)
+//                    ) {
+//                        if (state.isSyncing) {
+//                            CircularProgressIndicator(
+//                                modifier = Modifier.size(24.dp),
+//                                color = Color.White,
+//                                strokeWidth = 2.dp
+//                            )
+//                        } else {
+//                            Icon(
+//                                Icons.Filled.Sync,
+//                                contentDescription = stringResource(R.string.sync_content_description),
+//                                tint = Color.White
+//                            )
+//                        }
+//                    }
                 }
             }
             Row(
