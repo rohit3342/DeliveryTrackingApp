@@ -49,6 +49,7 @@ class SyncEngine @Inject constructor(
             customerName = dto.customerName,
             customerAddress = dto.customerAddress,
             customerPhone = dto.customerPhone.orEmpty(),
+            warehouseName = dto.warehouseName.orEmpty(),
             lastUpdatedAt = dto.lastUpdatedAt,
             syncedAt = dto.lastUpdatedAt,
             tasks = (dto.tasks ?: emptyList()).map { t ->
@@ -60,8 +61,8 @@ class SyncEngine @Inject constructor(
                     status = t.status,
                     sequence = t.sequence,
                     completedAt = t.completedAt,
-                    createdAt = dto.lastUpdatedAt,
-                    lastModifiedAt = dto.lastUpdatedAt,
+                    createdAt = t.createdAt ?: dto.lastUpdatedAt,
+                    lastModifiedAt = t.lastModifiedAt ?: dto.lastUpdatedAt,
                     wasEverPicked = wasEverPicked
                 )
             }

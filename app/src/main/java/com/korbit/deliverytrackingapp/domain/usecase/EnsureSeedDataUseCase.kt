@@ -22,6 +22,7 @@ class EnsureSeedDataUseCase @Inject constructor(
                 customerName = "James Wilson",
                 customerAddress = "42 Oak Lane, Brooklyn, NY 11201",
                 customerPhone = "+1 (212) 555-0147",
+                warehouseName = "Main Warehouse",
                 lastUpdatedAt = now,
                 syncedAt = null,
                 tasks = listOf(
@@ -36,6 +37,7 @@ class EnsureSeedDataUseCase @Inject constructor(
                 customerName = "Priya Sharma",
                 customerAddress = "1580 Commerce Drive, San Jose, CA 95131",
                 customerPhone = "+1 (408) 555-0192",
+                warehouseName = "Main Warehouse",
                 lastUpdatedAt = now - oneHour,
                 syncedAt = null,
                 tasks = listOf(
@@ -50,6 +52,7 @@ class EnsureSeedDataUseCase @Inject constructor(
                 customerName = "Marcus Johnson",
                 customerAddress = "901 West Peachtree St, Atlanta, GA 30309",
                 customerPhone = "+1 (404) 555-0234",
+                warehouseName = "North Warehouse",
                 lastUpdatedAt = now - 2 * oneHour,
                 syncedAt = null,
                 tasks = listOf(
@@ -64,6 +67,7 @@ class EnsureSeedDataUseCase @Inject constructor(
                 customerName = "Elena Rodriguez",
                 customerAddress = "2200 N Loop West, Houston, TX 77018",
                 customerPhone = "+1 (713) 555-0456",
+                warehouseName = "Main Warehouse",
                 lastUpdatedAt = now - 3 * oneHour,
                 syncedAt = null,
                 tasks = listOf(
@@ -78,6 +82,7 @@ class EnsureSeedDataUseCase @Inject constructor(
                 customerName = "David Kim",
                 customerAddress = "5500 South Marginal Way, Seattle, WA 98134",
                 customerPhone = "+1 (206) 555-0678",
+                warehouseName = "West Warehouse",
                 lastUpdatedAt = now - 4 * oneHour,
                 syncedAt = null,
                 tasks = listOf(
@@ -92,6 +97,7 @@ class EnsureSeedDataUseCase @Inject constructor(
                 customerName = "Omar Hassan",
                 customerAddress = "3300 S Las Vegas Blvd, Las Vegas, NV 89109",
                 customerPhone = "+1 (702) 555-0890",
+                warehouseName = "South Warehouse",
                 lastUpdatedAt = now - 6 * oneHour,
                 syncedAt = null,
                 tasks = listOf(
@@ -106,6 +112,7 @@ class EnsureSeedDataUseCase @Inject constructor(
                 customerName = "Sophie Chen",
                 customerAddress = "100 Market St, San Francisco, CA 94105",
                 customerPhone = "+1 (415) 555-0321",
+                warehouseName = "Main Warehouse",
                 lastUpdatedAt = now - 5 * oneHour,
                 syncedAt = null,
                 tasks = listOf(

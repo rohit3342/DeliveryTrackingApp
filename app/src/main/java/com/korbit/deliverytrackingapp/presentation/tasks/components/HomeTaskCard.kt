@@ -147,7 +147,7 @@ fun HomeTaskCard(
                         tint = OrangeIcon
                     )
                     Text(
-                        text = stringResource(R.string.pickup_origin),
+                        text = delivery.warehouseName.ifBlank { stringResource(R.string.pickup_origin) },
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.Black
                     )

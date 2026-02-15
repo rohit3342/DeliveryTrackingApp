@@ -9,6 +9,7 @@ data class DeliveryDto(
     @SerializedName("customer_name") val customerName: String,
     @SerializedName("customer_address") val customerAddress: String,
     @SerializedName("customer_phone") val customerPhone: String? = null,
+    @SerializedName("warehouse_name") val warehouseName: String? = null,
     @SerializedName("last_updated_at") val lastUpdatedAt: Long,
     @SerializedName("tasks") val tasks: List<TaskDto>?
 )
@@ -18,5 +19,7 @@ data class TaskDto(
     @SerializedName("type") val type: String,
     @SerializedName("status") val status: String,
     @SerializedName("sequence") val sequence: Int,
-    @SerializedName("completed_at") val completedAt: Long?
+    @SerializedName("completed_at") val completedAt: Long? = null,
+    @SerializedName("created_at") val createdAt: Long? = null,
+    @SerializedName("last_modified_at") val lastModifiedAt: Long? = null
 )

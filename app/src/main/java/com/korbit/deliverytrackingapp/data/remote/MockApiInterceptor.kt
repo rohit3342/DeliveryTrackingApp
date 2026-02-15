@@ -1,5 +1,8 @@
 package com.korbit.deliverytrackingapp.data.remote
 
+import com.google.gson.Gson
+import com.korbit.deliverytrackingapp.data.remote.dto.DeliveryDto
+import com.korbit.deliverytrackingapp.data.remote.dto.TaskDto
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Protocol
@@ -11,6 +14,8 @@ import okhttp3.ResponseBody.Companion.toResponseBody
  * Remove or disable in production.
  */
 class MockApiInterceptor : Interceptor {
+
+    private val gson = Gson()
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
@@ -26,17 +31,16 @@ class MockApiInterceptor : Interceptor {
 
     private fun buildDeliveriesResponse(request: okhttp3.Request): Response {
         val ts = System.currentTimeMillis()
-        val body = """
-            [
-              {"id":"d1","rider_id":"r1","status":"ACTIVE","customer_name":"James Wilson","customer_address":"42 Oak Lane, Brooklyn, NY 11201","customer_phone":"+1 (212) 555-0147","last_updated_at":$ts,"tasks":[{"id":"t1","type":"PICKUP","status":"PENDING","sequence":1,"completed_at":null,"created_at":$ts,"last_modified_at":$ts}]},
-              {"id":"d2","rider_id":"r1","status":"ACTIVE","customer_name":"Priya Sharma","customer_address":"1580 Commerce Drive, San Jose, CA 95131","customer_phone":"+1 (408) 555-0192","last_updated_at":${ts - 3600000},"tasks":[{"id":"t2","type":"PICKUP","status":"PICKED_UP","sequence":1,"completed_at":${ts - 3600000},"created_at":${ts - 7200000},"last_modified_at":${ts - 3600000}]},
-              {"id":"d3","rider_id":"r1","status":"ACTIVE","customer_name":"Marcus Johnson","customer_address":"901 West Peachtree St, Atlanta, GA 30309","customer_phone":"+1 (404) 555-0234","last_updated_at":${ts - 7200000},"tasks":[{"id":"t3","type":"DELIVER","status":"REACHED","sequence":1,"completed_at":null,"created_at":${ts - 10800000},"last_modified_at":${ts - 7200000}]},
-              {"id":"d4","rider_id":"r1","status":"ACTIVE","customer_name":"Elena Rodriguez","customer_address":"2200 N Loop West, Houston, TX 77018","customer_phone":"+1 (713) 555-0456","last_updated_at":${ts - 10800000},"tasks":[{"id":"t4","type":"DELIVER","status":"DELIVERED","sequence":1,"completed_at":${ts - 10800000},"created_at":${ts - 14400000},"last_modified_at":${ts - 10800000}]},
-              {"id":"d5","rider_id":"r1","status":"ACTIVE","customer_name":"David Kim","customer_address":"5500 South Marginal Way, Seattle, WA 98134","customer_phone":"+1 (206) 555-0678","last_updated_at":${ts - 14400000},"tasks":[{"id":"t5","type":"DELIVER","status":"FAILED","sequence":1,"completed_at":null,"created_at":${ts - 18000000},"last_modified_at":${ts - 14400000}]},
-              {"id":"d6","rider_id":"r1","status":"ACTIVE","customer_name":"Sophie Chen","customer_address":"100 Market St, San Francisco, CA 94105","customer_phone":"+1 (415) 555-0321","last_updated_at":${ts - 18000000},"tasks":[{"id":"t6","type":"PICKUP","status":"PENDING","sequence":1,"completed_at":null,"created_at":${ts - 18000000},"last_modified_at":${ts - 18000000}]},
-              {"id":"d7","rider_id":"r1","status":"ACTIVE","customer_name":"Omar Hassan","customer_address":"3300 S Las Vegas Blvd, Las Vegas, NV 89109","customer_phone":"+1 (702) 555-0890","last_updated_at":${ts - 21600000},"tasks":[{"id":"t7","type":"DELIVER","status":"FAILED","sequence":1,"completed_at":null,"created_at":${ts - 21600000},"last_modified_at":${ts - 21600000}]}
-            ]
-        """.trimIndent()
+        val deliveries = listOf(
+            DeliveryDto("d1", "r1", "ACTIVE", "James Wilson", "42 Oak Lane, Brooklyn, NY 11201", "+1 (212) 555-0147", "Main Warehouse", ts, listOf(TaskDto("t1", "PICKUP", "PENDING", 1, null, ts, ts))),
+            DeliveryDto("d2", "r1", "ACTIVE", "Priya Sharma", "1580 Commerce Drive, San Jose, CA 95131", "+1 (408) 555-0192", "Main Warehouse", ts - 3600000L, listOf(TaskDto("t2", "PICKUP", "PICKED_UP", 1, ts - 3600000L, ts - 7200000L, ts - 3600000L))),
+            DeliveryDto("d3", "r1", "ACTIVE", "Marcus Johnson", "901 West Peachtree St, Atlanta, GA 30309", "+1 (404) 555-0234", "North Warehouse", ts - 7200000L, listOf(TaskDto("t3", "DELIVER", "REACHED", 1, null, ts - 10800000L, ts - 7200000L))),
+            DeliveryDto("d4", "r1", "ACTIVE", "Elena Rodriguez", "2200 N Loop West, Houston, TX 77018", "+1 (713) 555-0456", "Main Warehouse", ts - 10800000L, listOf(TaskDto("t4", "DELIVER", "DELIVERED", 1, ts - 10800000L, ts - 14400000L, ts - 10800000L))),
+            DeliveryDto("d5", "r1", "ACTIVE", "David Kim", "5500 South Marginal Way, Seattle, WA 98134", "+1 (206) 555-0678", "West Warehouse", ts - 14400000L, listOf(TaskDto("t5", "DELIVER", "FAILED", 1, null, ts - 18000000L, ts - 14400000L))),
+            DeliveryDto("d6", "r1", "ACTIVE", "Sophie Chen", "100 Market St, San Francisco, CA 94105", "+1 (415) 555-0321", "Main Warehouse", ts - 18000000L, listOf(TaskDto("t6", "PICKUP", "PENDING", 1, null, ts - 18000000L, ts - 18000000L))),
+            DeliveryDto("d7", "r1", "ACTIVE", "Omar Hassan", "3300 S Las Vegas Blvd, Las Vegas, NV 89109", "+1 (702) 555-0890", "South Warehouse", ts - 21600000L, listOf(TaskDto("t7", "DELIVER", "FAILED", 1, null, ts - 21600000L, ts - 21600000L)))
+        )
+        val body = gson.toJson(deliveries)
         return Response.Builder()
             .request(request)
             .protocol(Protocol.HTTP_1_1)
@@ -48,9 +52,8 @@ class MockApiInterceptor : Interceptor {
 
     private fun buildSingleDeliveryResponse(request: okhttp3.Request): Response {
         val ts = System.currentTimeMillis()
-        val body = """
-            {"id":"d1","rider_id":"r1","status":"ACTIVE","customer_name":"James Wilson","customer_address":"42 Oak Lane, Brooklyn, NY 11201","customer_phone":"+1 (212) 555-0147","last_updated_at":$ts,"tasks":[{"id":"t1","type":"PICKUP","status":"PENDING","sequence":1,"completed_at":null,"created_at":$ts,"last_modified_at":$ts}]}
-        """.trimIndent()
+        val delivery = DeliveryDto("d1", "r1", "ACTIVE", "James Wilson", "42 Oak Lane, Brooklyn, NY 11201", "+1 (212) 555-0147", "Main Warehouse", ts, listOf(TaskDto("t1", "PICKUP", "PENDING", 1, null, ts, ts)))
+        val body = gson.toJson(delivery)
         return Response.Builder()
             .request(request)
             .protocol(Protocol.HTTP_1_1)
