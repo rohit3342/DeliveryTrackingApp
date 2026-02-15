@@ -19,6 +19,7 @@ interface DeliveryApi {
     @GET("deliveries/{id}")
     suspend fun getDeliveryById(@Path("id") id: String): Response<DeliveryDto>
 
+    /** Submit multiple task actions in one call (batch). Empty list is a no-op. */
     @POST("tasks/action")
-    suspend fun submitTaskAction(@Body request: TaskActionRequestDto): Response<Unit>
+    suspend fun submitTaskActions(@Body actions: List<TaskActionRequestDto>): Response<Unit>
 }

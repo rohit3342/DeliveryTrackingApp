@@ -9,8 +9,10 @@ import com.korbit.deliverytrackingapp.domain.repository.DeliveryRepository
 import javax.inject.Inject
 
 /**
- * Sync engine: (1) Push PENDING outbox events via SyncOrchestrator, (2) Pull deliveries from API into Room.
+ * Sync engine: (1) Push PENDING outbox events via SyncOrchestrator, (2) optionally pull deliveries from API into Room.
  * All network access is centralized here – no UI → network.
+ *
+ * When a task action is performed we only push outbox (no GET /deliveries). Full sync (with GET /deliveries) runs on periodic or manual sync.
  */
 class SyncEngine @Inject constructor(
     private val deliveryRepository: DeliveryRepository,
@@ -20,13 +22,17 @@ class SyncEngine @Inject constructor(
 ) {
     private val tag = "SyncEngine"
 
-    suspend fun sync(): Result<SyncResult> = runCatching {
-        logger.i(tag, "Sync started")
-        // 1. Process outbox via orchestrator (max 50, batch send, backoff, partial failure)
+    suspend fun sync(fetchDeliveries: Boolean = true): Result<SyncResult> = runCatching {
+        logger.i(tag, "Sync started (fetchDeliveries=$fetchDeliveries)")
         val outboxResult = syncOrchestrator.syncPendingEvents()
         val outboxSynced = outboxResult.getOrElse { SyncOrchestrator.SyncOrchestratorResult(0, 0, 0) }.synced
 
-        // 2. Pull deliveries from API and write to Room
+        // After task action we skip GET /deliveries; only periodic/manual sync fetches deliveries.
+        if (!fetchDeliveries) {
+            logger.i(tag, "Outbox-only sync: $outboxSynced events (no GET /deliveries)")
+            return@runCatching SyncResult(outboxSynced = outboxSynced, deliveriesSynced = 0)
+        }
+
         val apiResult = api.getDeliveries()
         if (!apiResult.isSuccessful) {
             logger.w(tag, "Fetch deliveries failed: ${apiResult.code()}")

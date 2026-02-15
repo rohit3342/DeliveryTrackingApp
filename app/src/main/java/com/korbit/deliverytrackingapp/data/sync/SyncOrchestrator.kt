@@ -79,49 +79,47 @@ class SyncOrchestrator @Inject constructor(
     }
 
     /**
-     * Sends the batch to the server. Marks synced only for successful responses;
-     * on failure increments retry and marks failed (partial failure handling).
+     * Sends all pending events to the server in one batch call. On success marks all as synced;
+     * on failure increments retry and marks all as failed (retry whole batch next time).
      */
     private suspend fun processBatch(events: List<TaskActionEventEntity>): SyncOrchestratorResult {
-        var synced = 0
-        var failed = 0
+        if (events.isEmpty()) return SyncOrchestratorResult(synced = 0, failed = 0, skipped = 0)
 
-        for (event in events) {
-            val request = TaskActionRequestDto(
+        val actions = events.map { event ->
+            TaskActionRequestDto(
                 taskId = event.taskId,
                 action = event.action,
                 payload = event.payload.ifEmpty { null },
                 actionTakenAt = if (event.actionTakenAt > 0) event.actionTakenAt else event.createdAt
             )
-            val response = runCatching { api.submitTaskAction(request) }.getOrElse { throw it }
-
-            if (response.isSuccessful) {
-                taskActionEventDao.markSynced(eventId = event.id, syncedAt = System.currentTimeMillis())
-                synced++
-                logStructured(
-                    "event_synced",
-                    "eventId" to event.id,
-                    "taskId" to event.taskId,
-                    "action" to event.action
-                )
-            } else {
-                taskActionEventDao.incrementRetry(event.id)
-                taskActionEventDao.markFailed(
-                    eventId = event.id,
-                    reason = "http_${response.code()}_${response.message().orEmpty()}"
-                )
-                failed++
-                logStructured(
-                    "event_failed",
-                    "eventId" to event.id,
-                    "taskId" to event.taskId,
-                    "code" to response.code(),
-                    "retryCount" to (event.retryCount + 1)
-                )
-            }
         }
 
-        return SyncOrchestratorResult(synced = synced, failed = failed, skipped = 0)
+        val response = runCatching { api.submitTaskActions(actions) }.getOrElse { throw it }
+        val now = System.currentTimeMillis()
+
+        if (response.isSuccessful) {
+            events.forEach { event ->
+                taskActionEventDao.markSynced(eventId = event.id, syncedAt = now)
+                logStructured("event_synced", "eventId" to event.id, "taskId" to event.taskId, "action" to event.action)
+            }
+            return SyncOrchestratorResult(synced = events.size, failed = 0, skipped = 0)
+        }
+
+        events.forEach { event ->
+            taskActionEventDao.incrementRetry(event.id)
+            taskActionEventDao.markFailed(
+                eventId = event.id,
+                reason = "http_${response.code()}_${response.message().orEmpty()}"
+            )
+            logStructured(
+                "event_failed",
+                "eventId" to event.id,
+                "taskId" to event.taskId,
+                "code" to response.code(),
+                "retryCount" to (event.retryCount + 1)
+            )
+        }
+        return SyncOrchestratorResult(synced = 0, failed = events.size, skipped = 0)
     }
 
     private fun logStructured(event: String, vararg pairs: Pair<String, Any>) {

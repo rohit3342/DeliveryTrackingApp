@@ -19,25 +19,26 @@ class OutboxProcessor @Inject constructor(
 
     suspend fun processPending(): Result<Int> = runCatching {
         val pending = outboxRepository.getPendingEvents()
-        logger.d(tag, "Processing ${pending.size} pending outbox events")
-        var synced = 0
-        for (event in pending) {
-            val result = api.submitTaskAction(
-                TaskActionRequestDto(
-                    taskId = event.taskId,
-                    action = event.action,
-                    payload = event.payload.ifEmpty { null }
-                )
+        if (pending.isEmpty()) return@runCatching 0
+        logger.d(tag, "Processing ${pending.size} pending outbox events (batch)")
+        val actions = pending.map { event ->
+            TaskActionRequestDto(
+                taskId = event.taskId,
+                action = event.action,
+                payload = event.payload.ifEmpty { null },
+                actionTakenAt = System.currentTimeMillis()
             )
-            if (result.isSuccessful) {
-                outboxRepository.markSynced(event.id, System.currentTimeMillis())
-                synced++
-            } else {
-                outboxRepository.markFailed(event.id, result.code().toString())
-                logger.w(tag, "Task action failed: ${event.taskId} code=${result.code()}")
-            }
         }
-        synced
+        val result = api.submitTaskActions(actions)
+        val now = System.currentTimeMillis()
+        if (result.isSuccessful) {
+            pending.forEach { outboxRepository.markSynced(it.id, now) }
+            pending.size
+        } else {
+            pending.forEach { outboxRepository.markFailed(it.id, result.code().toString()) }
+            logger.w(tag, "Task actions batch failed: code=${result.code()}")
+            0
+        }
     }.onFailure {
         logger.e(tag, "Outbox processing failed", it)
     }
